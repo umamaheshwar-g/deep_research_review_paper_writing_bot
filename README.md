@@ -61,9 +61,37 @@ pip install -r requirements.txt
 4. **Configure environment variables**
 Create a `.env` file in the project root:
 ```env
-PINECONE_API_KEY=your_pinecone_api_key
-OPENAI_API_KEY=your_openai_api_key
+# Required API Keys
+OPENAI_API_KEY=your_openai_api_key_here
+PINECONE_API_KEY=your_pinecone_api_key_here
+
+# Pinecone Configuration
+PINECONE_INDEX_NAME=your_pinecone_index_name  # Default: deepresearchreviewbot
+
+# Academic API Configuration (for paper discovery)
+CROSSREF_EMAIL=your_email@example.com
+PUBMED_EMAIL=your_email@example.com
+SEMANTIC_SCHOLAR_API_KEY=your_semantic_scholar_api_key
+SERPER_API_KEY=your_serper_api_key
+
+# Optional API Keys (for enhanced functionality)
+GROQ_API_KEY=your_groq_api_key  # Alternative LLM provider
+GEMINI_API_KEY=your_gemini_api_key  # Alternative LLM provider
+HF_TOKEN=your_huggingface_token  # For HuggingFace models
+
+# Vector Database Options (Pinecone is required, others optional)
+WEAVIATE_URL=your_weaviate_url  # Optional alternative vector DB
+WEAVIATE_API_KEY=your_weaviate_api_key
+QDRANT_API_KEY=your_qdrant_api_key  # Optional alternative vector DB
+
+# Application Settings
+DEBUG=True  # Set to False in production
+SAVE_RAW_RESPONSES=True  # Set to False to save storage
 ```
+
+> **Note**: The project uses multiple `.env` files in different directories. For simplicity, you can create a single `.env` file in the root directory, and it will be used by all components. If you need to customize settings for specific modules, you can create separate `.env` files in the respective directories.
+
+> **Important**: At minimum, you must provide `OPENAI_API_KEY` and `PINECONE_API_KEY` for the application to function properly.
 
 ## 📖 Usage
 
@@ -102,6 +130,44 @@ python review_paper_writing_crew_new/main.py --topic "Your Research Topic" --out
 python review_paper_writing_crew_new/main.py --topic "Your Research Topic" --namespace YOUR_NAMESPACE --output review_paper.md
 ```
 
+## 🔧 Troubleshooting
+
+### Environment Variable Issues
+
+If you encounter issues related to environment variables, try these solutions:
+
+1. **API Key Not Found**
+   ```
+   Error: OPENAI_API_KEY/PINECONE_API_KEY not found
+   ```
+   - Ensure your `.env` file is in the correct location (project root)
+   - Check that the variable names match exactly (case-sensitive)
+   - Verify there are no spaces around the equals sign: `KEY=value` (not `KEY = value`)
+   - Try printing the environment variables to debug:
+     ```python
+     import os
+     from dotenv import load_dotenv
+     load_dotenv()
+     print(f"OPENAI_API_KEY set: {bool(os.getenv('OPENAI_API_KEY'))}")
+     print(f"PINECONE_API_KEY set: {bool(os.getenv('PINECONE_API_KEY'))}")
+     ```
+
+2. **Module Can't Find Environment Variables**
+   - Create a module-specific `.env` file in the module directory
+   - Or use absolute paths in your code:
+     ```python
+     from dotenv import load_dotenv
+     import os
+     
+     # Load from project root
+     load_dotenv(os.path.join(os.path.dirname(os.path.dirname(__file__)), '.env'))
+     ```
+
+3. **Invalid API Keys**
+   - Verify your API keys are valid and active
+   - Check for any whitespace or special characters that might have been copied
+   - Ensure you're using the correct API key format for each service
+
 ## 📁 Project Structure
 
 ```
@@ -111,8 +177,11 @@ research-paper-finder/
 ├── 📄 pdf_processor_pymupdf.py  # PDF processing module
 ├── 📋 requirements.txt         # Project dependencies
 ├── 🔑 .env                    # Environment variables (not in git)
+├── 🔑 .env.toml               # Alternative TOML-format environment config (optional)
 ├── 📂 review_paper_writing_crew_new/ # AI-powered research paper writing module
 │   ├── 📜 main.py             # Main entry point for the review paper generation
+│   ├── 🔑 .env                # Module-specific environment variables (optional)
+│   ├── 🔑 .env.example        # Example environment file for the module
 │   ├── 📂 agents/             # CrewAI agent definitions
 │   │   ├── 📄 manager_agent.py # Oversees the entire paper generation process
 │   │   ├── 📄 researcher_agent.py # Retrieves and analyzes research papers
@@ -132,6 +201,24 @@ research-paper-finder/
         ├── 📚 papers/         # Downloaded PDF files
         └── 🔍 processed_data/ # Processed paper data
 ```
+
+### 🔑 Environment File Management
+
+The project uses environment variables for configuration and API keys. There are several environment files:
+
+1. **Root `.env`**: Main configuration file in the project root
+   - Contains all API keys and configuration settings
+   - Used by all components unless overridden
+
+2. **Module-specific `.env` files**:
+   - `research_paper_downloader/.env`: Settings for the paper downloader
+   - `review_paper_writing_crew_new/.env`: Settings for the review paper generator
+
+3. **Alternative formats**:
+   - `.env.toml`: TOML-format configuration (more structured)
+   - `.env.example`: Example configuration templates
+
+For most users, creating a single `.env` file in the project root with all required variables is sufficient.
 
 ## 📚 Documentation
 
