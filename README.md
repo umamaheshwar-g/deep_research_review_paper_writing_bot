@@ -135,33 +135,136 @@ research-paper-finder/
 
 ## 📚 Documentation
 
-### Workflow Steps
+### 🔄 Workflow Steps
 
-1. **Paper Discovery & Download**
-   - Search across academic sources
-   - Smart filtering and relevance scoring
-   - Concurrent downloads with progress tracking
+<div align="center">
+  <table>
+    <tr>
+      <td align="center"><b>Step 1</b></td>
+      <td align="center"><b>Step 2</b></td>
+      <td align="center"><b>Step 3</b></td>
+      <td align="center"><b>Step 4</b></td>
+      <td align="center"><b>Step 5</b></td>
+    </tr>
+    <tr>
+      <td align="center">🔍</td>
+      <td align="center">📄</td>
+      <td align="center">🔢</td>
+      <td align="center">🧠</td>
+      <td align="center">🤖</td>
+    </tr>
+    <tr>
+      <td align="center">Paper Discovery</td>
+      <td align="center">PDF Processing</td>
+      <td align="center">Vector Indexing</td>
+      <td align="center">Semantic Search</td>
+      <td align="center">Review Generation</td>
+    </tr>
+  </table>
+</div>
 
-2. **PDF Processing**
-   - Text and metadata extraction
-   - Smart content analysis
-   - Structured data generation
+<div align="center">
+<pre>
+┌─────────────┐     ┌─────────────┐     ┌─────────────┐     ┌─────────────┐     ┌─────────────┐
+│    Query    │     │    PDFs     │     │   Chunks    │     │   Vectors   │     │   Review    │
+│   Engine    │────▶│  Processor  │────▶│  Generator  │────▶│   Search    │────▶│    Paper    │
+│             │     │             │     │             │     │             │     │  Generator  │
+└─────────────┘     └─────────────┘     └─────────────┘     └─────────────┘     └─────────────┘
+      │                   ▲                   │                   │                   │
+      │                   │                   │                   │                   │
+      ▼                   │                   ▼                   ▼                   ▼
+┌─────────────┐     ┌─────────────┐     ┌─────────────┐     ┌─────────────┐     ┌─────────────┐
+│  Academic   │     │   Paper     │     │  OpenAI     │     │  Pinecone   │     │   CrewAI    │
+│  Sources    │     │ Repository  │     │ Embeddings  │     │   Vector    │     │  Agents &   │
+│             │     │             │     │             │     │    DB       │     │   Tasks     │
+└─────────────┘     └─────────────┘     └─────────────┘     └─────────────┘     └─────────────┘
+</pre>
+</div>
 
-3. **Vector Indexing**
-   - Document chunking
-   - Embedding generation
-   - Pinecone vector storage
+#### 📥 1. Paper Discovery & Download
 
-4. **Semantic Search**
-   - Query vectorization
-   - Similarity matching
-   - Relevance-based results
+<table>
+<tr>
+<td width="80"><h1 align="center">🔍</h1></td>
+<td>
 
-5. **AI-Powered Review Paper Generation**
-   - Multi-agent collaboration using CrewAI
-   - Semantic search with Pinecone for relevant content
-   - Structured research and writing workflow
-   - Automated citation management
+- **Multi-Source Search**: Queries academic databases and repositories to find relevant papers
+- **Smart Filtering**: Uses AI-powered relevance scoring to prioritize the most important papers
+- **Concurrent Downloads**: Implements asynchronous downloading with progress tracking
+- **Metadata Extraction**: Automatically extracts titles, authors, publication dates, and abstracts
+- **Format Handling**: Supports PDF documents with automatic format validation
+
+</td>
+</tr>
+</table>
+
+#### 📊 2. PDF Processing
+
+<table>
+<tr>
+<td width="80"><h1 align="center">📄</h1></td>
+<td>
+
+- **Text Extraction**: Uses PyMuPDF to extract full text content with layout preservation
+- **Structure Recognition**: Identifies sections, headings, figures, and tables
+- **Metadata Enhancement**: Enriches document metadata with extracted information
+- **Content Analysis**: Performs initial content analysis for quality assessment
+- **Multi-Processing**: Utilizes parallel processing for handling multiple documents efficiently
+
+</td>
+</tr>
+</table>
+
+#### 🧩 3. Vector Indexing
+
+<table>
+<tr>
+<td width="80"><h1 align="center">🔢</h1></td>
+<td>
+
+- **Smart Chunking**: Splits documents into semantic chunks using RecursiveCharacterTextSplitter
+- **Embedding Generation**: Creates vector embeddings using OpenAI's text-embedding-3-large model
+- **Metadata Preservation**: Maintains document metadata linked to each chunk
+- **Batch Processing**: Processes embeddings in optimized batches for efficiency
+- **Pinecone Integration**: Stores vectors in Pinecone with namespace-based organization
+
+</td>
+</tr>
+</table>
+
+#### 🔎 4. Semantic Search
+
+<table>
+<tr>
+<td width="80"><h1 align="center">🧠</h1></td>
+<td>
+
+- **Query Vectorization**: Converts natural language queries into vector representations
+- **Similarity Matching**: Performs cosine similarity search across the vector database
+- **Context-Aware Results**: Returns results with surrounding context for better understanding
+- **Relevance Scoring**: Ranks results based on semantic similarity scores
+- **Filtering Capabilities**: Supports filtering by document, section, or custom metadata
+
+</td>
+</tr>
+</table>
+
+#### 📝 5. AI-Powered Review Paper Generation
+
+<table>
+<tr>
+<td width="80"><h1 align="center">🤖</h1></td>
+<td>
+
+- **Multi-Agent Collaboration**: Orchestrates specialized agents using CrewAI framework
+- **Research Workflow**: Implements a structured research process with defined tasks
+- **Content Synthesis**: Combines information from multiple sources into coherent sections
+- **Citation Management**: Automatically tracks and formats academic citations
+- **Quality Control**: Includes editing and refinement phases for academic standards
+
+</td>
+</tr>
+</table>
 
 ### Review Paper Writing Crew Architecture
 
@@ -189,9 +292,11 @@ The `review_paper_writing_crew_new` module is an AI-powered system for automatic
    - Namespace-based session management for result persistence
    - Structured output in markdown format with proper academic citations
 
-### Command Line Options
+### ⌨️ Command Line Options
 
-#### Review Paper Generator
+<details>
+<summary><b>Review Paper Generator</b></summary>
+
 ```bash
 python review_paper_writing_crew_new/main.py [OPTIONS]
   --topic         Research topic to review (default: "Diffusion Large Language Models")
@@ -200,8 +305,11 @@ python review_paper_writing_crew_new/main.py [OPTIONS]
   --index-name    Pinecone index name (default: deepresearchreviewbot)
   --debug         Enable debug logging for the retriever
 ```
+</details>
 
-#### PDF Processor
+<details>
+<summary><b>PDF Processor</b></summary>
+
 ```bash
 python pdf_processor_pymupdf.py [OPTIONS]
   --folder        PDF files directory
@@ -210,8 +318,11 @@ python pdf_processor_pymupdf.py [OPTIONS]
   --processes     Number of processes
   --remove-stopwords  Remove stopwords (default: True)
 ```
+</details>
 
-#### Vector Indexing
+<details>
+<summary><b>Vector Indexing</b></summary>
+
 ```bash
 python pinecone_indexer.py [OPTIONS]
   --folder        Processed data directory
@@ -219,14 +330,79 @@ python pinecone_indexer.py [OPTIONS]
   --chunk-size    Chunk size (default: 1000)
   --chunk-overlap Overlap size (default: 200)
 ```
+</details>
 
-#### Semantic Search
+<details>
+<summary><b>Semantic Search</b></summary>
+
 ```bash
 python pinecone_query.py [OPTIONS]
   --index         Pinecone index name
   --query         Search query
   --top-k        Number of results (default: 5)
 ```
+</details>
+
+### 📊 Data Flow
+
+The system processes information through a series of transformations:
+
+<table>
+<tr>
+<th>Stage</th>
+<th>Input</th>
+<th>Process</th>
+<th>Output</th>
+</tr>
+<tr>
+<td><b>Query Processing</b></td>
+<td>User research query</td>
+<td>Query expansion and optimization</td>
+<td>Structured search parameters</td>
+</tr>
+<tr>
+<td><b>Paper Discovery</b></td>
+<td>Search parameters</td>
+<td>Multi-source academic search</td>
+<td>PDF documents + metadata</td>
+</tr>
+<tr>
+<td><b>PDF Processing</b></td>
+<td>PDF documents</td>
+<td>Text extraction and structure analysis</td>
+<td>Structured text content</td>
+</tr>
+<tr>
+<td><b>Chunking</b></td>
+<td>Structured text</td>
+<td>Semantic chunking with metadata</td>
+<td>Text chunks with context</td>
+</tr>
+<tr>
+<td><b>Embedding</b></td>
+<td>Text chunks</td>
+<td>Vector embedding generation</td>
+<td>Vector representations</td>
+</tr>
+<tr>
+<td><b>Indexing</b></td>
+<td>Vectors + metadata</td>
+<td>Pinecone vector storage</td>
+<td>Searchable vector database</td>
+</tr>
+<tr>
+<td><b>Semantic Search</b></td>
+<td>Query vectors</td>
+<td>Similarity matching</td>
+<td>Relevant text chunks</td>
+</tr>
+<tr>
+<td><b>Review Generation</b></td>
+<td>Relevant chunks</td>
+<td>Multi-agent collaboration</td>
+<td>Structured review paper</td>
+</tr>
+</table>
 
 ## 🤝 Contributing
 
