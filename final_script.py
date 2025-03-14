@@ -2,7 +2,10 @@ import streamlit as st
 import asyncio
 import os
 import sys
+import subprocess
 from dotenv import load_dotenv
+import io
+from contextlib import redirect_stdout
 
 # Load environment variables from .env file
 load_dotenv()
@@ -34,6 +37,23 @@ CHUNK_SIZE = 600
 CHUNK_OVERLAP = 200
 BATCH_SIZE = 100
 EMBEDDING_MODEL = "text-embedding-3-large"
+
+class StreamToExpander:
+    """
+    Custom class to redirect stdout to a Streamlit container.
+    This allows for real-time display of CrewAI's output.
+    """
+    def __init__(self, container):
+        self.container = container
+        self.text = ""
+        self.text_area = self.container.empty()
+    
+    def write(self, text):
+        self.text += text
+        self.text_area.markdown(f"```\n{self.text}\n```")
+    
+    def flush(self):
+        pass
 
 def load_processed_data(processed_data_folder: str) -> List[Dict[str, Any]]:
     """Load all processed PDF data from a folder."""
@@ -72,20 +92,87 @@ def chunk_documents(documents: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
         
         texts = text_splitter.split_text(page_content)
         
-        # Extract only the required metadata fields
+        # Extract metadata fields including evaluation data
+        paper_metadata = metadata.get('paper_metadata', {})
+        evaluation_data = paper_metadata.get('evaluation', {})
+        
+        # Ensure authors is a list of strings
+        authors = paper_metadata.get('authors', [])
+        if not isinstance(authors, list):
+            authors = []
+        authors = [str(author) for author in authors if author is not None]
+        
+        # Ensure score is a number or convert to 0 if not present/invalid
+        score = evaluation_data.get('score')
+        if not isinstance(score, (int, float)) or score is None:
+            score = 0
+        
+        # Get citation from evaluation data
+        citation = evaluation_data.get('citation', '')
+        if not citation or citation == 'None':
+            # Try to generate a citation if not present
+            title = paper_metadata.get('title', '')
+            year = paper_metadata.get('published', paper_metadata.get('year', ''))
+            journal = paper_metadata.get('journal', '')
+            
+            if title and authors:
+                author_str = authors[0] if authors else 'Unknown'
+                if len(authors) > 1:
+                    author_str += ' et al.'
+                citation = f"{author_str} ({year}). {title}"
+                if journal:
+                    citation += f". {journal}"
+        
         filtered_metadata = {
-            'total_pages': metadata.get('total_pages', 0),
-            'fetched_source': metadata.get('fetched_source', ''),
-            'local_id': metadata.get('local_id', '')
+            'total_pages': int(metadata.get('total_pages', 0)),
+            'fetched_source': str(metadata.get('fetched_source', '')),
+            'local_id': str(metadata.get('local_id', '')),
+            # 'title': str(paper_metadata.get('title', '')),
+            # 'authors': authors,
+            # Add evaluation metadata with proper type handling
+            'score': score,
+            'citation': str(citation),
+            'reasoning': str(evaluation_data.get('reasoning', ''))
         }
         
+        # Split content by page delimiter to get page boundaries
+        pages = page_content.split('\n<<12344567890>>\n')
+        page_boundaries = []
+        current_pos = 0
+        
+        # Calculate the character position of each page boundary
+        for page in pages:
+            page_len = len(page) + len('\n<<12344567890>>\n')  # Include delimiter length
+            page_boundaries.append((current_pos, current_pos + page_len))
+            current_pos += page_len
+        
         for i, text in enumerate(texts):
+            # Find the start position of this chunk in the original content
+            chunk_start = page_content.find(text)
+            chunk_end = chunk_start + len(text)
+            
+            # Find which pages this chunk spans
+            page_start = 1
+            page_end = 1
+            
+            for page_num, (page_start_pos, page_end_pos) in enumerate(page_boundaries, 1):
+                if chunk_start < page_end_pos:
+                    page_start = page_num
+                    break
+            
+            for page_num, (page_start_pos, page_end_pos) in enumerate(page_boundaries, 1):
+                if chunk_end <= page_end_pos:
+                    page_end = page_num
+                    break
+            
             chunk = {
                 'text': text,
                 'metadata': {
                     **filtered_metadata,
                     'chunk_id': i,
-                    'total_chunks': len(texts)
+                    'total_chunks': len(texts),
+                    'page_start': page_start,
+                    'page_end': page_end
                 }
             }
             chunks.append(chunk)
@@ -131,7 +218,10 @@ def index_documents_in_pinecone(processed_data_folder: str, namespace: str) -> N
             vectors.append({
                 'id': f"{chunk['metadata']['local_id']}_{chunk['metadata']['chunk_id']}",
                 'values': embedding,
-                'metadata': chunk['metadata']
+                'metadata': {
+                    **chunk['metadata'],
+                    'text': chunk['text']
+                }
             })
         
         # Upsert to Pinecone
@@ -182,7 +272,7 @@ def format_pinecone_results(results: Dict[str, Any]) -> str:
         return "No results found."
     
     formatted = []
-    for i, match in enumerate(results['matches']):
+    for i, match in enumerate(results['matches'], 1):
         score = match['score']
         metadata = match['metadata']
         text = match.get('text', '')  # Get the actual text content
@@ -202,6 +292,48 @@ def format_pinecone_results(results: Dict[str, Any]) -> str:
         formatted.append(result)
     
     return "\n" + "-" * 80 + "\n\n".join(formatted)
+
+def check_pinecone_namespace(namespace: str) -> Dict[str, Any]:
+    """
+    Check if a namespace exists in Pinecone and has vectors.
+    
+    Args:
+        namespace (str): The namespace to check
+        
+    Returns:
+        Dict with keys:
+        - exists (bool): Whether the namespace exists
+        - vector_count (int): Number of vectors in the namespace
+        - error (str, optional): Error message if any
+    """
+    result = {
+        "exists": False,
+        "vector_count": 0,
+        "error": None
+    }
+    
+    try:
+        # Initialize Pinecone
+        pinecone_api_key = os.getenv("PINECONE_API_KEY")
+        if not pinecone_api_key:
+            result["error"] = "PINECONE_API_KEY not found in environment variables"
+            return result
+            
+        pc = pinecone.Pinecone(api_key=pinecone_api_key)
+        index = pc.Index("deepresearchreviewbot")
+        
+        # Get index stats
+        stats = index.describe_index_stats()
+        
+        # Check if namespace exists
+        if 'namespaces' in stats and namespace in stats['namespaces']:
+            result["exists"] = True
+            result["vector_count"] = stats['namespaces'][namespace].get('vector_count', 0)
+        
+    except Exception as e:
+        result["error"] = str(e)
+    
+    return result
 
 def init_session_state():
     """Initialize session state variables."""
@@ -226,6 +358,13 @@ def init_session_state():
         st.session_state.pinecone_namespace = None
     if 'processed_dir' not in st.session_state:
         st.session_state.processed_dir = None
+    # Add review paper generation state variables
+    if 'review_paper_generated' not in st.session_state:
+        st.session_state.review_paper_generated = False
+    if 'review_paper_path' not in st.session_state:
+        st.session_state.review_paper_path = None
+    if 'current_query' not in st.session_state:
+        st.session_state.current_query = None
 
 def find_available_port(start=8501, end=8599):
     """Find an available port for the Streamlit server."""
@@ -311,9 +450,45 @@ def handle_session_retrieval(uuid_input):
     processed_dir = os.path.join(session_dir, "processed_data")
     if os.path.exists(processed_dir):
         st.session_state.processed_dir = processed_dir
-        # Reset Pinecone indexing state for the new session
-        st.session_state.pinecone_indexed = False
-        st.session_state.pinecone_namespace = None
+        
+        # Check if this namespace exists in Pinecone
+        if st.session_state.pinecone_initialized:
+            # Use the new function to check namespace status
+            namespace_status = check_pinecone_namespace(uuid_input)
+            
+            if namespace_status["error"]:
+                st.warning(f"Could not verify Pinecone indexing status: {namespace_status['error']}")
+                st.session_state.pinecone_indexed = False
+                st.session_state.pinecone_namespace = uuid_input
+            elif namespace_status["exists"]:
+                if namespace_status["vector_count"] > 0:
+                    st.session_state.pinecone_indexed = True
+                    st.session_state.pinecone_namespace = uuid_input
+                    st.info(f"Documents are already indexed in Pinecone. Found {namespace_status['vector_count']} vectors.")
+                else:
+                    st.session_state.pinecone_indexed = False
+                    st.session_state.pinecone_namespace = uuid_input
+                    st.warning(f"Namespace exists but contains no vectors. Reindexing recommended.")
+            else:
+                st.session_state.pinecone_indexed = False
+                st.session_state.pinecone_namespace = uuid_input
+                st.warning("No documents found in Pinecone. Indexing required.")
+        else:
+            st.session_state.pinecone_indexed = False
+            st.session_state.pinecone_namespace = None
+    
+    # Check for review papers
+    review_papers = [f for f in os.listdir(session_dir) if f.endswith('.md')]
+    if review_papers:
+        # Use the most recent review paper
+        latest_paper = max(review_papers, key=lambda f: os.path.getmtime(os.path.join(session_dir, f)))
+        review_paper_path = os.path.join(session_dir, latest_paper)
+        st.session_state.review_paper_generated = True
+        st.session_state.review_paper_path = review_paper_path
+        st.info(f"Found existing review paper: {latest_paper}")
+    else:
+        st.session_state.review_paper_generated = False
+        st.session_state.review_paper_path = None
         
     display_session_info(session_dir)
 
@@ -324,16 +499,57 @@ def display_session_info(session_dir):
     
     paper_count = len([f for f in os.listdir(papers_dir) if f.endswith('.pdf')]) if os.path.exists(papers_dir) else 0
     processed_count = len([f for f in os.listdir(processed_dir) if f.endswith('.json')]) if os.path.exists(processed_dir) else 0
+    review_papers = [f for f in os.listdir(session_dir) if f.endswith('.md')] if os.path.exists(session_dir) else []
+    review_paper_count = len(review_papers)
     
-    st.info(f"Found {paper_count} papers and {processed_count} processed files.")
+    st.info(f"Found {paper_count} papers, {processed_count} processed files, and {review_paper_count} review papers.")
     
-    col1, col2 = st.columns(2)
+    col1, col2, col3 = st.columns(3)
     with col1:
         if st.button("📂 Open Papers Folder") and os.path.exists(papers_dir):
             os.startfile(papers_dir)
     with col2:
         if st.button("📂 Open Processed Data") and os.path.exists(processed_dir):
             os.startfile(processed_dir)
+    with col3:
+        if st.button("📂 Open Session Folder") and os.path.exists(session_dir):
+            os.startfile(session_dir)
+            
+    # Display search results file if it exists
+    search_results_file = os.path.join(session_dir, "search_results.json")
+    if os.path.exists(search_results_file):
+        try:
+            with open(search_results_file, 'r', encoding='utf-8') as f:
+                search_results = json.load(f)
+                
+            if search_results:
+                # Extract the query from the first paper's title or abstract
+                if isinstance(search_results, list) and len(search_results) > 0:
+                    first_paper = search_results[0]
+                    if 'title' in first_paper:
+                        # Use the title as a fallback for the query
+                        st.session_state.current_query = first_paper['title']
+        except Exception as e:
+            print(f"Error loading search results: {e}")
+            
+    # Display review papers if they exist
+    if review_papers:
+        st.subheader("📝 Existing Review Papers")
+        for paper in review_papers:
+            with st.expander(paper):
+                paper_path = os.path.join(session_dir, paper)
+                try:
+                    with open(paper_path, 'r', encoding='utf-8') as f:
+                        paper_content = f.read()
+                        preview = paper_content[:500] + "..." if len(paper_content) > 500 else paper_content
+                        st.markdown(preview)
+                        
+                    # Button to set this as the current review paper
+                    if st.button(f"View Full Paper: {paper}"):
+                        st.session_state.review_paper_generated = True
+                        st.session_state.review_paper_path = paper_path
+                except Exception as e:
+                    st.error(f"Error reading review paper: {e}")
 
 def process_search_results(result):
     """Process and display search results."""
@@ -571,6 +787,10 @@ def handle_command_line_args():
                         help="Remove stopwords from paper_metadata (default: True)")
     parser.add_argument("--keep-original", action="store_false", dest="remove_stopwords",
                         help="Keep original metadata without removing stopwords")
+    parser.add_argument("--index", action="store_true", help="Index processed papers in Pinecone")
+    parser.add_argument("--generate-review", action="store_true", help="Generate a review paper")
+    parser.add_argument("--topic", help="Topic for the review paper")
+    parser.add_argument("--check-index", action="store_true", help="Check if documents are indexed in Pinecone")
     args = parser.parse_args()
     
     if not args.uuid:
@@ -593,6 +813,27 @@ def handle_command_line_args():
     
     print(f"Found {paper_count} papers and {processed_count} processed files.")
     
+    # Check if documents are indexed in Pinecone
+    if args.check_index or args.generate_review:
+        namespace_status = check_pinecone_namespace(args.uuid)
+        if namespace_status["error"]:
+            print(f"Error checking Pinecone namespace: {namespace_status['error']}")
+        elif namespace_status["exists"]:
+            if namespace_status["vector_count"] > 0:
+                print(f"Documents are already indexed in Pinecone. Found {namespace_status['vector_count']} vectors.")
+                is_indexed = True
+            else:
+                print(f"Namespace exists but contains no vectors. Reindexing recommended.")
+                is_indexed = False
+        else:
+            print("No documents found in Pinecone. Indexing required.")
+            is_indexed = False
+            
+        # If generating a review and not indexed, automatically index
+        if args.generate_review and not is_indexed and processed_count > 0:
+            print("Indexing documents before generating review paper...")
+            args.index = True
+    
     if args.process and paper_count > 0:
         print(f"Processing papers for session UUID: {args.uuid}")
         os.makedirs(processed_dir, exist_ok=True)
@@ -612,7 +853,111 @@ def handle_command_line_args():
         else:
             print(f"Papers folder not found: {papers_dir}")
     
-    print(f"Papers folder: {os.path.abspath(papers_dir)}")
+    # Index in Pinecone if requested
+    if args.index and processed_count > 0:
+        print(f"Indexing processed papers in Pinecone for UUID: {args.uuid}")
+        try:
+            index_documents_in_pinecone(processed_dir, args.uuid)
+            print("Indexing completed successfully!")
+        except Exception as e:
+            print(f"Error indexing documents: {str(e)}")
+    
+    # Generate review paper if requested
+    if args.generate_review:
+        if not args.topic:
+            print("Error: --topic is required when using --generate-review")
+            return
+            
+        print(f"\n{'='*80}")
+        print(f"🤖 Generating review paper for topic: {args.topic}")
+        print(f"{'='*80}\n")
+        
+        try:
+            # Create a sanitized filename
+            sanitized_topic = "".join(c if c.isalnum() else "_" for c in args.topic)
+            sanitized_topic = sanitized_topic[:50]  # Limit length
+            output_filename = f"{sanitized_topic}_{args.uuid}.md"
+            output_path = os.path.join(session_dir, output_filename)
+            
+            # Get the current directory to ensure we have the correct path
+            current_dir = os.path.dirname(os.path.abspath(__file__))
+            review_crew_dir = os.path.join(current_dir, "review_paper_writing_crew_new")
+            
+            # Make sure the directory exists
+            if not os.path.exists(review_crew_dir):
+                print(f"Error: Review paper directory not found at: {review_crew_dir}")
+                return
+                
+            # Get the path to main.py
+            main_script = os.path.join(review_crew_dir, "main.py")
+            if not os.path.exists(main_script):
+                print(f"Error: Review paper script not found at: {main_script}")
+                return
+            
+            # Run the CrewAI script
+            cmd = [
+                sys.executable,
+                "main.py",  # Just use the script name since we'll set the working directory
+                "--topic", args.topic,
+                "--namespace", args.uuid,
+                "--output", os.path.abspath(output_path),  # Use absolute path for output
+                "--index-name", "deepresearchreviewbot"
+            ]
+            
+            # Set up environment with UTF-8 encoding for Windows
+            env = os.environ.copy()
+            env["PYTHONIOENCODING"] = "utf-8"
+            env["CREWAI_DISABLE_EMOJI"] = "true"  # Disable emojis in CrewAI output
+            
+            print(f"Running command in directory: {review_crew_dir}")
+            process = subprocess.Popen(
+                cmd,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                text=True,
+                cwd=review_crew_dir,  # Set the working directory to the review crew directory
+                env=env,  # Pass the environment with UTF-8 encoding
+                encoding='utf-8',  # Explicitly set encoding for subprocess
+                errors='replace'  # Replace any characters that can't be decoded
+            )
+            
+            # Display output in real-time with better formatting
+            print("\n" + "-"*40 + " OUTPUT " + "-"*40 + "\n")
+            while True:
+                output = process.stdout.readline()
+                if output == '' and process.poll() is not None:
+                    break
+                if output:
+                    print(output.strip())
+            print("\n" + "-"*88 + "\n")
+            
+            # Get return code
+            return_code = process.poll()
+            
+            if return_code == 0:
+                print(f"\n✅ Review paper generated successfully!")
+                print(f"📄 Saved to: {output_path}")
+                
+                # Display a preview of the paper
+                try:
+                    with open(output_path, 'r', encoding='utf-8') as f:
+                        content = f.read()
+                        preview_length = min(500, len(content))
+                        preview = content[:preview_length] + ("..." if len(content) > preview_length else "")
+                    
+                    print(f"\n{'='*40} PREVIEW {'='*40}\n")
+                    print(preview)
+                    print(f"\n{'='*88}\n")
+                except Exception as e:
+                    print(f"Error reading paper for preview: {str(e)}")
+            else:
+                error_output = process.stderr.read()
+                print(f"\n❌ Error generating review paper. Return code: {return_code}")
+                print(f"Error details: {error_output}")
+        except Exception as e:
+            print(f"Error generating review paper: {str(e)}")
+    
+    print(f"\nPapers folder: {os.path.abspath(papers_dir)}")
     print(f"Processed data folder: {os.path.abspath(processed_dir)}")
     
     open_folders = input("Open folders? (y/n): ")
@@ -621,6 +966,8 @@ def handle_command_line_args():
             os.startfile(papers_dir)
         if os.path.exists(processed_dir):
             os.startfile(processed_dir)
+        if os.path.exists(session_dir):
+            os.startfile(session_dir)
 
 def main():
     """Main function for the Streamlit app"""
@@ -650,6 +997,14 @@ def main():
         st.error(f"Failed to initialize Pinecone: {str(e)}")
         st.session_state.pinecone_initialized = False
     
+    # Check for UUID in URL parameters
+    query_params = st.experimental_get_query_params()
+    if "uuid" in query_params and query_params["uuid"]:
+        uuid_from_url = query_params["uuid"][0]
+        if not st.session_state.chat_id or st.session_state.chat_id != uuid_from_url:
+            # Only retrieve if not already loaded or different UUID
+            handle_session_retrieval(uuid_from_url)
+    
     st.title("📚 Research Paper Finder")
     st.markdown(f"""
     This app helps you search and download research papers based on your query.
@@ -657,7 +1012,7 @@ def main():
     """)
     
     # Create tabs for different functionality
-    tab1, tab2 = st.tabs(["Search & Process", "Semantic Search"])
+    tab1, tab2, tab3 = st.tabs(["Search & Process", "Semantic Search", "Generate Review Paper"])
     
     with tab1:
         sidebar_params = render_sidebar()
@@ -675,6 +1030,8 @@ def main():
                     st.session_state.should_cancel = True
         
         if search_button and search_query:
+            # Store the current query in session state
+            st.session_state.current_query = search_query
             handle_search(search_query, sidebar_params)
         elif not st.session_state.search_results:
             display_welcome_message()
@@ -685,20 +1042,43 @@ def main():
         # Add indexing section at the top of semantic search tab
         if hasattr(st.session_state, 'processed_dir') and st.session_state.chat_id:
             st.subheader("📥 Index Documents")
-            if not st.session_state.pinecone_indexed:
-                if st.button("Index Now"):
-                    try:
-                        with st.spinner("Indexing documents in Pinecone..."):
-                            # Use chat_id as namespace
-                            namespace = st.session_state.chat_id
-                            index_documents_in_pinecone(st.session_state.processed_dir, namespace)
+            
+            # Add a button to check indexing status
+            col1, col2 = st.columns([1, 1])
+            with col1:
+                if st.button("🔍 Check Indexing Status"):
+                    namespace_status = check_pinecone_namespace(st.session_state.chat_id)
+                    if namespace_status["error"]:
+                        st.error(f"Error checking Pinecone namespace: {namespace_status['error']}")
+                    elif namespace_status["exists"]:
+                        if namespace_status["vector_count"] > 0:
                             st.session_state.pinecone_indexed = True
-                            st.session_state.pinecone_namespace = namespace
-                            st.success(f"Successfully indexed documents in Pinecone namespace: {namespace}")
-                    except Exception as e:
-                        st.error(f"Error indexing documents in Pinecone: {str(e)}")
-            else:
-                st.success("Documents are indexed and ready to search!")
+                            st.session_state.pinecone_namespace = st.session_state.chat_id
+                            st.success(f"Documents are indexed in Pinecone. Found {namespace_status['vector_count']} vectors.")
+                        else:
+                            st.session_state.pinecone_indexed = False
+                            st.session_state.pinecone_namespace = st.session_state.chat_id
+                            st.warning(f"Namespace exists but contains no vectors. Reindexing recommended.")
+                    else:
+                        st.session_state.pinecone_indexed = False
+                        st.session_state.pinecone_namespace = st.session_state.chat_id
+                        st.warning("No documents found in Pinecone. Indexing required.")
+            
+            with col2:
+                if not st.session_state.pinecone_indexed:
+                    if st.button("Index Now"):
+                        try:
+                            with st.spinner("Indexing documents in Pinecone..."):
+                                # Use chat_id as namespace
+                                namespace = st.session_state.chat_id
+                                index_documents_in_pinecone(st.session_state.processed_dir, namespace)
+                                st.session_state.pinecone_indexed = True
+                                st.session_state.pinecone_namespace = namespace
+                                st.success(f"Successfully indexed documents in Pinecone namespace: {namespace}")
+                        except Exception as e:
+                            st.error(f"Error indexing documents in Pinecone: {str(e)}")
+                else:
+                    st.success("Documents are indexed and ready to search!")
             
             st.divider()
         
@@ -729,6 +1109,186 @@ def main():
                 st.info("Please index your documents using the button above to enable semantic search.")
             else:
                 st.info("Process documents in the Search & Process tab first to enable semantic search.")
+    
+    with tab3:
+        render_review_paper_tab()
+
+def render_review_paper_tab():
+    """Render the review paper generation tab."""
+    st.header("📝 Generate Review Paper")
+    
+    # Check if we have indexed documents
+    if not st.session_state.pinecone_indexed:
+        st.warning("Please index your documents first in the Semantic Search tab before generating a review paper.")
+        return
+    
+    # Display current session info
+    if st.session_state.chat_id:
+        st.info(f"Current Session UUID: **{st.session_state.chat_id}**")
+    
+    # Input for review paper topic
+    review_topic = st.text_input(
+        "Enter the topic for your review paper:",
+        value=st.session_state.current_query if st.session_state.current_query else "",
+        placeholder="e.g., 'Recent advances in transformer models for natural language processing'"
+    )
+    
+    # Generate button
+    col1, col2 = st.columns([1, 1])
+    with col1:
+        generate_button = st.button("🖋️ Generate New Review Paper")
+    
+    with col2:
+        if st.session_state.review_paper_generated and st.session_state.review_paper_path:
+            regenerate_button = st.button("🔄 Regenerate with Same Topic")
+    
+    # Handle generate button click
+    if generate_button and review_topic and st.session_state.chat_id:
+        with st.status("🤖 **AI Agents at work...**", state="running", expanded=True) as status:
+            with st.container(height=500, border=False):
+                output_container = st.container()
+                try:
+                    generate_review_paper(review_topic, st.session_state.chat_id, output_container)
+                    status.update(label="✅ Review Paper Ready!", state="complete", expanded=False)
+                except Exception as e:
+                    st.error(f"Error generating review paper: {str(e)}")
+                    status.update(label="❌ Error generating review paper", state="error", expanded=True)
+    
+    # Handle regenerate button click
+    if 'regenerate_button' in locals() and regenerate_button and review_topic and st.session_state.chat_id:
+        with st.status("🤖 **AI Agents regenerating paper...**", state="running", expanded=True) as status:
+            with st.container(height=500, border=False):
+                output_container = st.container()
+                try:
+                    generate_review_paper(review_topic, st.session_state.chat_id, output_container)
+                    status.update(label="✅ Review Paper Updated!", state="complete", expanded=False)
+                except Exception as e:
+                    st.error(f"Error regenerating review paper: {str(e)}")
+                    status.update(label="❌ Error regenerating review paper", state="error", expanded=True)
+    
+    # Display generated paper if available
+    if st.session_state.review_paper_generated and st.session_state.review_paper_path:
+        # Display the paper
+        try:
+            with open(st.session_state.review_paper_path, 'r', encoding='utf-8') as f:
+                paper_content = f.read()
+            
+            # Extract filename for display
+            filename = os.path.basename(st.session_state.review_paper_path)
+            
+            st.subheader(f"📄 Review Paper: {filename}", divider="rainbow")
+            
+            # Add download and open folder buttons
+            col1, col2 = st.columns([1, 1])
+            with col1:
+                st.download_button(
+                    label="⬇️ Download Review Paper",
+                    data=paper_content,
+                    file_name=filename,
+                    mime="text/markdown"
+                )
+            with col2:
+                if st.button("📂 Open Containing Folder"):
+                    folder_path = os.path.dirname(st.session_state.review_paper_path)
+                    os.startfile(folder_path)
+            
+            # Display paper content
+            st.markdown(paper_content)
+                
+        except Exception as e:
+            st.error(f"Error displaying review paper: {str(e)}")
+
+def generate_review_paper(topic: str, namespace: str, output_container=None):
+    """Generate a review paper using the CrewAI system."""
+    try:
+        # Create output directory if it doesn't exist
+        output_dir = os.path.join("downloads", namespace)
+        os.makedirs(output_dir, exist_ok=True)
+        
+        # Create a sanitized filename
+        sanitized_topic = "".join(c if c.isalnum() else "_" for c in topic)
+        sanitized_topic = sanitized_topic[:50]  # Limit length
+        output_filename = f"{sanitized_topic}_{namespace}.md"
+        output_path = os.path.join(output_dir, output_filename)
+        
+        # Get the current directory to ensure we have the correct path
+        current_dir = os.path.dirname(os.path.abspath(__file__))
+        review_crew_dir = os.path.join(current_dir, "review_paper_writing_crew_new")
+        
+        # Make sure the directory exists
+        if not os.path.exists(review_crew_dir):
+            st.error(f"Review paper directory not found at: {review_crew_dir}")
+            return
+            
+        # Get the path to main.py
+        main_script = os.path.join(review_crew_dir, "main.py")
+        if not os.path.exists(main_script):
+            st.error(f"Review paper script not found at: {main_script}")
+            return
+        
+        # Set up the output stream
+        if output_container:
+            stream_handler = StreamToExpander(output_container)
+        
+        # Run the CrewAI script
+        cmd = [
+            sys.executable,
+            "main.py",  # Just use the script name since we'll set the working directory
+            "--topic", topic,
+            "--namespace", namespace,
+            "--output", os.path.abspath(output_path),  # Use absolute path for output
+            "--index-name", "deepresearchreviewbot"
+        ]
+        
+        # Set up environment with UTF-8 encoding for Windows
+        env = os.environ.copy()
+        env["PYTHONIOENCODING"] = "utf-8"
+        env["CREWAI_DISABLE_EMOJI"] = "true"  # Disable emojis in CrewAI output
+        
+        print(f"Running command in directory: {review_crew_dir}")
+        process = subprocess.Popen(
+            cmd,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            text=True,
+            cwd=review_crew_dir,  # Set the working directory to the review crew directory
+            env=env,  # Pass the environment with UTF-8 encoding
+            encoding='utf-8',  # Explicitly set encoding for subprocess
+            errors='replace'  # Replace any characters that can't be decoded
+        )
+        
+        # Display output in real-time
+        if output_container:
+            while True:
+                output = process.stdout.readline()
+                if output == '' and process.poll() is not None:
+                    break
+                if output:
+                    stream_handler.write(output)
+        else:
+            # Fallback to simple output collection if no container provided
+            output_text = ""
+            while True:
+                output = process.stdout.readline()
+                if output == '' and process.poll() is not None:
+                    break
+                if output:
+                    output_text += output
+        
+        # Get return code
+        return_code = process.poll()
+        
+        if return_code == 0:
+            st.session_state.review_paper_generated = True
+            st.session_state.review_paper_path = output_path
+            st.success(f"Review paper generated successfully!")
+        else:
+            error_output = process.stderr.read()
+            st.error(f"Error generating review paper. Return code: {return_code}")
+            st.error(f"Error details: {error_output}")
+    except Exception as e:
+        st.error(f"Error generating review paper: {str(e)}")
+        raise e
 
 def handle_search(query, params):
     """Handle the search and download process."""

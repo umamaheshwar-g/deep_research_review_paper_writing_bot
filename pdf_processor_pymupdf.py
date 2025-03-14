@@ -105,40 +105,48 @@ def extract_metadata_from_pdf(pdf_path: str) -> Dict[str, Any]:
     
     return metadata
 
-def find_paper_metadata(search_results_file, local_id):
-    """Find paper metadata from search results file using only local_id matching."""
+def find_paper_metadata(local_id: str, uuid_dir: str) -> dict:
+    """
+    Find paper metadata from smart_results.json file.
+    
+    Args:
+        local_id (str): Local ID of the paper
+        uuid_dir (str): Path to the UUID directory
+        
+    Returns:
+        dict: Complete paper metadata without modifications
+    """
     try:
-        # If search_results_file is a relative path, convert it to absolute
-        if not os.path.isabs(search_results_file):
-            search_results_file = os.path.abspath(search_results_file)
+        # Extract UUID from path if it's a full path
+        if os.path.exists(uuid_dir):
+            # If uuid_dir is a file path, get its directory
+            if os.path.isfile(uuid_dir):
+                uuid_dir = os.path.dirname(uuid_dir)
         
-        # Check if the file exists
-        if not os.path.exists(search_results_file):
-            # Try looking in the smart_search_results subdirectory
-            uuid_dir = os.path.dirname(search_results_file)
-            alt_search_results_file = os.path.join(uuid_dir, "smart_search_results", "smart_results.json")
+        # Construct path to smart_results.json
+        smart_results_path = os.path.join(uuid_dir, "smart_search_results", "smart_results.json")
+        
+        # Check if file exists
+        if not os.path.exists(smart_results_path):
+            print(f"No smart_results.json found at {smart_results_path}")
+            return None
             
-            if os.path.exists(alt_search_results_file):
-                search_results_file = alt_search_results_file
-            else:
-                print(f"No search results file found.")
-                return None
-        
-        with open(search_results_file, 'r', encoding='utf-8') as f:
+        # Load and parse smart_results.json
+        with open(smart_results_path, 'r', encoding='utf-8') as f:
             search_data = json.load(f)
         
-        # Get the papers list from smart_results.json
-        if isinstance(search_data, dict) and "papers" in search_data:
-            search_results = search_data["papers"]
-        else:
-            search_results = search_data
+        # Get papers list
+        papers = search_data.get("papers", [])
         
-        # Find paper with matching local_id
-        for paper in search_results:
+        # Find matching paper
+        for paper in papers:
             if paper.get('local_id') == local_id:
+                print(f"Found metadata for paper {local_id}")
+                if 'evaluation' in paper:
+                    print(f"Evaluation data found: {paper['evaluation']}")
                 return paper
-        
-        print(f"No metadata found for paper with local_id: {local_id}")
+                
+        print(f"No metadata found for paper {local_id}")
         return None
         
     except Exception as e:
@@ -158,8 +166,8 @@ def convert_metadata_to_string(paper_metadata: Dict[str, Any]) -> str:
     if not paper_metadata:
         return ""
     
-    # Fields to exclude from the string representation
-    exclude_fields = ['local_id', 'source_specific', 'evaluation']
+    # No fields to exclude - include everything
+    exclude_fields = []  # Empty list to include all fields
     
     # Create a string from all metadata fields
     metadata_str = ""
@@ -173,8 +181,8 @@ def convert_metadata_to_string(paper_metadata: Dict[str, Any]) -> str:
                     # For complex lists, just use the key
                     metadata_str += f"{key} "
             elif isinstance(value, dict):
-                # For dictionaries, just use the key
-                metadata_str += f"{key} "
+                # For dictionaries, include the key and a placeholder
+                metadata_str += f"{key}: dict "
             elif value is not None:
                 metadata_str += f"{key}: {value} "
     
@@ -185,7 +193,7 @@ def convert_metadata_to_string(paper_metadata: Dict[str, Any]) -> str:
     
     return " ".join(filtered_text)
 
-def save_processed_data(filename: str, data: List, output_folder: Path, search_results_file: Optional[str] = None, remove_stopwords: bool = False):
+def save_processed_data(filename: str, data: List, output_folder: Path, uuid_dir: Optional[str] = None, remove_stopwords: bool = False):
     """
     Save processed PDF data to a JSON file.
     
@@ -193,7 +201,7 @@ def save_processed_data(filename: str, data: List, output_folder: Path, search_r
         filename: Path to the PDF file
         data: List of document objects from PyMuPDF
         output_folder: Folder to save processed data
-        search_results_file: Path to search results JSON file for metadata enrichment
+        uuid_dir: Path to the UUID directory containing smart_search_results
         remove_stopwords: Not used anymore, kept for backward compatibility
     
     Returns:
@@ -211,10 +219,22 @@ def save_processed_data(filename: str, data: List, output_folder: Path, search_r
     # Extract local_id from filename
     local_id = file_stem
     
-    # Try to find paper metadata from search results
+    # Try to find paper metadata from smart_results.json
     paper_metadata = None
-    if search_results_file:
-        paper_metadata = find_paper_metadata(search_results_file, local_id)
+    if uuid_dir:
+        paper_metadata = find_paper_metadata(local_id, uuid_dir)
+    
+    # If no paper metadata found, try to extract from PDF
+    if not paper_metadata:
+        extracted_metadata = extract_metadata_from_pdf(filename)
+        if extracted_metadata:
+            paper_metadata = {
+                'local_id': local_id,
+                'title': extracted_metadata.get('title'),
+                'authors': extracted_metadata.get('authors', []),
+                'abstract': extracted_metadata.get('abstract'),
+                'doi': extracted_metadata.get('doi')
+            }
     
     # Since we're processing as single, data will be a list with one item
     doc = data[0]
@@ -225,9 +245,16 @@ def save_processed_data(filename: str, data: List, output_folder: Path, search_r
     # Add local_id
     metadata_dict['local_id'] = local_id
     
-    # Add paper metadata if found
+    # Add paper metadata if found - store it as is without modifications
     if paper_metadata:
+        # Store the entire paper_metadata as a separate field
         metadata_dict['paper_metadata'] = paper_metadata
+        
+        # Debug print for evaluation field
+        if 'evaluation' in paper_metadata:
+            print(f"Evaluation field present in paper_metadata: {paper_metadata['evaluation']}")
+        else:
+            print("Evaluation field not present in paper_metadata")
     
     processed_data = {
         'page_content': doc.page_content,
@@ -242,7 +269,7 @@ def save_processed_data(filename: str, data: List, output_folder: Path, search_r
 
 def load_pdf(args):
     """Load a single PDF file and return timing info"""
-    file, output_folder, search_results_file, remove_stopwords = args
+    file, output_folder, uuid_dir, remove_stopwords = args
     start_time = time.time()
     try:
         # Change mode to "single" instead of "page"
@@ -256,7 +283,7 @@ def load_pdf(args):
         filename = os.path.basename(file)
         
         # Save processed data
-        save_processed_data(file, data, output_folder, search_results_file, remove_stopwords)
+        save_processed_data(file, data, output_folder, uuid_dir, remove_stopwords)
         
         print(f"{load_time:.2f} seconds to load {filename} ({pages} pages)")
         return PDFLoadResult(file, load_time, pages, data)
@@ -278,31 +305,19 @@ def process_pdfs(pdf_folder, output_folder, search_results_file=None, processes=
     
     print(f"Processing {len(pdf_files)} PDFs...")
     
-    # Check if search_results_file exists
-    if search_results_file:
-        if os.path.exists(search_results_file):
-            print(f"Using search results file: {search_results_file}")
-        else:
-            # Try looking in the smart_search_results subdirectory first
-            uuid_dir = os.path.dirname(search_results_file)
-            smart_results_file = os.path.join(uuid_dir, "smart_search_results", "smart_results.json")
-            
-            if os.path.exists(smart_results_file):
-                search_results_file = smart_results_file
-                print(f"Using smart search results file: {search_results_file}")
-            else:
-                # Try looking in the search_results subdirectory as fallback
-                alt_search_results_file = os.path.join(uuid_dir, "search_results", "search_results.json")
-                
-                if os.path.exists(alt_search_results_file):
-                    search_results_file = alt_search_results_file
-                    print(f"Using fallback search results file: {search_results_file}")
-                else:
-                    print(f"Warning: No search results files found at any location.")
-                    print("Will attempt to extract metadata directly from PDFs.")
-                    search_results_file = None
+    # Get the UUID directory from the pdf_folder path
+    uuid_dir = os.path.dirname(os.path.abspath(pdf_folder))
+    
+    # Always look for smart_results.json in the smart_search_results folder
+    smart_results_file = os.path.join(uuid_dir, "smart_search_results", "smart_results.json")
+    
+    if os.path.exists(smart_results_file):
+        print(f"Using smart search results file: {smart_results_file}")
+        search_results_file = uuid_dir  # Pass the UUID directory instead of the file path
     else:
-        print("No search results file provided. Will attempt to extract metadata directly from PDFs.")
+        print(f"Warning: No smart_results.json found at {smart_results_file}")
+        print("Will attempt to extract metadata directly from PDFs.")
+        search_results_file = None
     
     # Create arguments list for the worker function
     args = [(str(file), output_folder, search_results_file, remove_stopwords) for file in pdf_files]
@@ -349,80 +364,74 @@ def print_summary(results: List[PDFLoadResult]):
         'avg_time': avg_time
     }
 
+def process_pdf(pdf_path: str, uuid: str):
+    """Process a single PDF file and save with metadata."""
+    try:
+        # Get local_id from filename
+        local_id = Path(pdf_path).stem
+        
+        # Load PDF content
+        loader = PyMuPDFLoader(pdf_path, mode="single", extract_tables="markdown", pages_delimiter="\n<<12344567890>>\n")
+        data = loader.load()
+        
+        # Get UUID directory
+        uuid_dir = os.path.join("downloads", uuid)
+        
+        # Get paper metadata
+        paper_metadata = find_paper_metadata(local_id, uuid_dir)
+        
+        # Create metadata dictionary from PyMuPDF metadata
+        metadata = dict(data[0].metadata) if hasattr(data[0], 'metadata') else {}
+        
+        # Add local_id at top level
+        metadata['local_id'] = local_id
+        
+        # Add paper_metadata as a separate field without modifications
+        if paper_metadata:
+            metadata['paper_metadata'] = paper_metadata
+            if 'evaluation' in paper_metadata:
+                print(f"Evaluation field present in paper_metadata: {paper_metadata['evaluation']}")
+        
+        # Create output data
+        processed_data = {
+            'page_content': data[0].page_content,
+            'metadata': metadata
+        }
+        
+        # Create output path
+        output_dir = Path("downloads") / uuid / "processed_data"
+        output_dir.mkdir(exist_ok=True)
+        output_path = output_dir / f"processed_{local_id}.json"
+        
+        # Save processed data
+        with open(output_path, 'w', encoding='utf-8') as f:
+            json.dump(processed_data, f, ensure_ascii=False, indent=2)
+            
+        print(f"Successfully processed {local_id}")
+        
+    except Exception as e:
+        print(f"Error processing PDF {pdf_path}: {e}")
+
+def process_pdfs_in_folder(uuid: str):
+    """Process all PDFs in the papers folder for a given UUID."""
+    # Get path to papers folder
+    papers_dir = Path("downloads") / uuid / "papers"
+    
+    if not papers_dir.exists():
+        print(f"Papers directory not found: {papers_dir}")
+        return
+    
+    # Process each PDF
+    for pdf_file in papers_dir.glob("*.pdf"):
+        process_pdf(str(pdf_file), uuid)
+
 def main():
     """Main function to process PDFs from command line"""
-    parser = argparse.ArgumentParser(description="Process PDF files using PyMuPDF")
-    parser.add_argument("--folder", help="Folder containing PDF files")
-    parser.add_argument("--output", help="Output folder for processed data")
-    parser.add_argument("--uuid", help="UUID of the search to process")
-    parser.add_argument("--processes", type=int, default=None, help="Number of processes to use")
-    parser.add_argument("--remove-stopwords", action="store_true", default=True, 
-                        help="Remove stopwords from paper_metadata (default: True)")
-    parser.add_argument("--keep-original", action="store_false", dest="remove_stopwords",
-                        help="Keep original metadata without removing stopwords")
-    
+    parser = argparse.ArgumentParser(description="Process PDFs and add metadata from smart_results.json")
+    parser.add_argument("uuid", help="UUID of the search to process")
     args = parser.parse_args()
     
-    folder_path = None
-    output_folder = None
-    search_results_file = None
-    
-    if args.uuid:
-        # Process PDFs from a specific search UUID
-        base_dir = Path("downloads") / args.uuid
-        folder_path = base_dir / "papers"
-        output_folder = base_dir / "processed_data"
-        
-        # First try to use smart search results
-        smart_results_file = base_dir / "smart_search_results" / "smart_results.json"
-        if smart_results_file.exists():
-            search_results_file = smart_results_file
-            print(f"Using smart search results file: {search_results_file}")
-        else:
-            # Fall back to regular search results
-            search_results_file = base_dir / "search_results.json"
-            
-            # Ensure the output folder exists
-            output_folder.mkdir(exist_ok=True, parents=True)
-            
-            # Check for search results in alternate locations if needed
-            if not search_results_file.exists():
-                alt_search_results = base_dir / "search_results" / "search_results.json"
-                if alt_search_results.exists():
-                    search_results_file = alt_search_results
-                    print(f"Using fallback search results file: {search_results_file}")
-                else:
-                    search_results_file = None
-                    print(f"No search results files found: {search_results_file}")
-    elif args.folder:
-        # Process PDFs from a custom folder
-        folder_path = Path(args.folder)
-        
-        # If output folder is specified, use it; otherwise, create a 'processed_data' folder next to the input folder
-        if args.output:
-            output_folder = Path(args.output)
-        else:
-            output_folder = folder_path.parent / "processed_data"
-        
-        # Ensure the output folder exists
-        output_folder.mkdir(exist_ok=True, parents=True)
-    else:
-        print("Error: Either --uuid or --folder must be specified")
-        return []
-    
-    print(f"Processing PDFs from: {folder_path}")
-    print(f"Saving processed data to: {output_folder}")
-    print(f"Remove stopwords: {args.remove_stopwords}")
-    
-    results = process_pdfs(
-        pdf_folder=folder_path,
-        output_folder=output_folder,
-        search_results_file=search_results_file,
-        processes=args.processes,
-        remove_stopwords=args.remove_stopwords
-    )
-    
-    return results
+    process_pdfs_in_folder(args.uuid)
 
 if __name__ == "__main__":
     # Required for Windows multiprocessing

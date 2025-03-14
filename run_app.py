@@ -39,14 +39,28 @@ def run_streamlit_app(port=None, script_path=None):
     if current_dir not in sys.path:
         sys.path.append(current_dir)
     
+    # Add the review_paper_writing_crew_new directory to Python path
+    review_crew_dir = os.path.join(current_dir, "review_paper_writing_crew_new")
+    if os.path.exists(review_crew_dir) and review_crew_dir not in sys.path:
+        sys.path.append(review_crew_dir)
+        print(f"Added {review_crew_dir} to Python path")
+    
     # Build the command
     cmd = [sys.executable, "-m", "streamlit", "run", script_path, 
            "--server.port", str(port),
            "--server.address", "localhost"]
     
+    # Set PYTHONPATH environment variable to include the current directory and review_crew_dir
+    env = os.environ.copy()
+    python_path = env.get('PYTHONPATH', '')
+    if python_path:
+        env['PYTHONPATH'] = f"{current_dir}{os.pathsep}{review_crew_dir}{os.pathsep}{python_path}"
+    else:
+        env['PYTHONPATH'] = f"{current_dir}{os.pathsep}{review_crew_dir}"
+    
     try:
         # Run the command
-        process = subprocess.Popen(cmd, env=os.environ.copy())
+        process = subprocess.Popen(cmd, env=env)
         print(f"App is running at http://localhost:{port}")
         print("Press Ctrl+C to stop the app")
         process.wait()
