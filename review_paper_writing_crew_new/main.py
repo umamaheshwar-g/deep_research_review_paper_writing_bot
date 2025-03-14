@@ -1,9 +1,5 @@
 # Must precede any llm module imports
 
-from langtrace_python_sdk import langtrace
-
-langtrace.init(api_key = 'b3972c908d04c709e6805d45e5fba780aacd5256e21614f4e543391f5edf8ec3')
-
 import os
 import argparse
 import uuid

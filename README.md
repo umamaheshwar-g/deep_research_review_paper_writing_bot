@@ -10,7 +10,7 @@
 
 A powerful Streamlit-based application for discovering, downloading, and analyzing research papers using advanced semantic search capabilities.
 
-[Features](#features) • [Prerequisites](#prerequisites) • [Installation](#installation) • [Usage](#usage) • [Documentation](#documentation)
+[Features](#features) • [Prerequisites](#prerequisites) • [Usage](#usage) • [Documentation](#documentation) • [Installation](#installation) • [Contributing](#contributing)
 
 </div>
 
@@ -33,65 +33,6 @@ A powerful Streamlit-based application for discovering, downloading, and analyzi
 - Python 3.7 or higher
 - Pinecone API key ([Get here](https://www.pinecone.io/))
 - OpenAI API key ([Get here](https://platform.openai.com/))
-
-## 💻 Installation
-
-1. **Clone the repository**
-```bash
-git clone https://github.com/yourusername/research-paper-finder.git
-cd research-paper-finder
-```
-
-2. **Set up virtual environment**
-```bash
-# Windows
-python -m venv venv
-.\venv\Scripts\activate
-
-# Unix/MacOS
-python -m venv venv
-source venv/bin/activate
-```
-
-3. **Install dependencies**
-```bash
-pip install -r requirements.txt
-```
-
-4. **Configure environment variables**
-Create a `.env` file in the project root:
-```env
-# Required API Keys
-OPENAI_API_KEY=your_openai_api_key_here
-PINECONE_API_KEY=your_pinecone_api_key_here
-
-# Pinecone Configuration
-PINECONE_INDEX_NAME=your_pinecone_index_name  # Default: deepresearchreviewbot
-
-# Academic API Configuration (for paper discovery)
-CROSSREF_EMAIL=your_email@example.com
-PUBMED_EMAIL=your_email@example.com
-SEMANTIC_SCHOLAR_API_KEY=your_semantic_scholar_api_key
-SERPER_API_KEY=your_serper_api_key
-
-# Optional API Keys (for enhanced functionality)
-GROQ_API_KEY=your_groq_api_key  # Alternative LLM provider
-GEMINI_API_KEY=your_gemini_api_key  # Alternative LLM provider
-HF_TOKEN=your_huggingface_token  # For HuggingFace models
-
-# Vector Database Options (Pinecone is required, others optional)
-WEAVIATE_URL=your_weaviate_url  # Optional alternative vector DB
-WEAVIATE_API_KEY=your_weaviate_api_key
-QDRANT_API_KEY=your_qdrant_api_key  # Optional alternative vector DB
-
-# Application Settings
-DEBUG=True  # Set to False in production
-SAVE_RAW_RESPONSES=True  # Set to False to save storage
-```
-
-> **Note**: The project uses multiple `.env` files in different directories. For simplicity, you can create a single `.env` file in the root directory, and it will be used by all components. If you need to customize settings for specific modules, you can create separate `.env` files in the respective directories.
-
-> **Important**: At minimum, you must provide `OPENAI_API_KEY` and `PINECONE_API_KEY` for the application to function properly.
 
 ## 📖 Usage
 
@@ -490,6 +431,65 @@ The system processes information through a series of transformations:
 <td>Structured review paper</td>
 </tr>
 </table>
+
+## 💻 Installation
+
+1. **Clone the repository**
+```bash
+git clone https://github.com/yourusername/research-paper-finder.git
+cd research-paper-finder
+```
+
+2. **Set up virtual environment**
+```bash
+# Windows
+python -m venv venv
+.\venv\Scripts\activate
+
+# Unix/MacOS
+python -m venv venv
+source venv/bin/activate
+```
+
+3. **Install dependencies**
+```bash
+pip install -r requirements.txt
+```
+
+4. **Configure environment variables**
+Create a `.env` file in the project root:
+```env
+# Required API Keys
+OPENAI_API_KEY=your_openai_api_key_here
+PINECONE_API_KEY=your_pinecone_api_key_here
+
+# Pinecone Configuration
+PINECONE_INDEX_NAME=your_pinecone_index_name  # Default: deepresearchreviewbot
+
+# Academic API Configuration (for paper discovery)
+CROSSREF_EMAIL=your_email@example.com
+PUBMED_EMAIL=your_email@example.com
+SEMANTIC_SCHOLAR_API_KEY=your_semantic_scholar_api_key
+SERPER_API_KEY=your_serper_api_key
+
+# Optional API Keys (for enhanced functionality)
+GROQ_API_KEY=your_groq_api_key  # Alternative LLM provider
+GEMINI_API_KEY=your_gemini_api_key  # Alternative LLM provider
+HF_TOKEN=your_huggingface_token  # For HuggingFace models
+
+# Vector Database Options (Pinecone is required, others optional)
+WEAVIATE_URL=your_weaviate_url  # Optional alternative vector DB
+WEAVIATE_API_KEY=your_weaviate_api_key
+QDRANT_API_KEY=your_qdrant_api_key  # Optional alternative vector DB
+
+# Application Settings
+DEBUG=True  # Set to False in production
+SAVE_RAW_RESPONSES=True  # Set to False to save storage
+```
+
+> **Note**: The project uses multiple `.env` files in different directories. For simplicity, you can create a single `.env` file in the root directory, and it will be used by all components. If you need to customize settings for specific modules, you can create separate `.env` files in the respective directories.
+
+> **Important**: At minimum, you must provide `OPENAI_API_KEY` and `PINECONE_API_KEY` for the application to function properly.
 
 ## 🤝 Contributing
 
