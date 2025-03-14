@@ -26,6 +26,7 @@ A powerful Streamlit-based application for discovering, downloading, and analyzi
 - 📈 **Progress Tracking**: Real-time download and processing progress monitoring
 - 🎯 **Smart Metadata**: Enhanced metadata extraction and processing
 - 🖥️ **Modern UI**: Clean and intuitive Streamlit interface
+- 📝 **Automated Review Papers**: AI-generated comprehensive research reviews using multi-agent collaboration
 
 ## 🚀 Prerequisites
 
@@ -86,6 +87,21 @@ Process papers from existing sessions:
 python final_script.py --uuid YOUR_SESSION_UUID --process
 ```
 
+### Review Paper Generation
+
+Generate comprehensive research review papers:
+```bash
+# Activate the virtual environment
+# Windows
+.\venv\Scripts\Activate.ps1
+
+# Generate a review paper on a specific topic
+python review_paper_writing_crew_new/main.py --topic "Your Research Topic" --output review_paper.md
+
+# Use an existing Pinecone namespace
+python review_paper_writing_crew_new/main.py --topic "Your Research Topic" --namespace YOUR_NAMESPACE --output review_paper.md
+```
+
 ## 📁 Project Structure
 
 ```
@@ -95,6 +111,22 @@ research-paper-finder/
 ├── 📄 pdf_processor_pymupdf.py  # PDF processing module
 ├── 📋 requirements.txt         # Project dependencies
 ├── 🔑 .env                    # Environment variables (not in git)
+├── 📂 review_paper_writing_crew_new/ # AI-powered research paper writing module
+│   ├── 📜 main.py             # Main entry point for the review paper generation
+│   ├── 📂 agents/             # CrewAI agent definitions
+│   │   ├── 📄 manager_agent.py # Oversees the entire paper generation process
+│   │   ├── 📄 researcher_agent.py # Retrieves and analyzes research papers
+│   │   ├── 📄 writer_agent.py  # Drafts sections of the review paper
+│   │   └── 📄 editor_agent.py  # Refines and polishes the final paper
+│   ├── 📂 tasks/              # Task definitions for each agent
+│   │   ├── 📄 research_tasks.py # Tasks for literature search and analysis
+│   │   ├── 📄 writing_tasks.py # Tasks for drafting paper sections
+│   │   └── 📄 editing_tasks.py # Tasks for editing and refinement
+│   ├── 📂 tools/              # Custom tools for agents
+│   │   ├── 📄 retriever.py    # Pinecone vector search tool
+│   │   └── 📄 citation_manager.py # Manages paper citations
+│   └── 📂 utils/              # Utility functions
+│       └── 📄 helpers.py      # Helper functions for the module
 └── 📁 downloads/              # Downloaded papers and processed data
     └── {session-uuid}/
         ├── 📚 papers/         # Downloaded PDF files
@@ -125,7 +157,49 @@ research-paper-finder/
    - Similarity matching
    - Relevance-based results
 
+5. **AI-Powered Review Paper Generation**
+   - Multi-agent collaboration using CrewAI
+   - Semantic search with Pinecone for relevant content
+   - Structured research and writing workflow
+   - Automated citation management
+
+### Review Paper Writing Crew Architecture
+
+The `review_paper_writing_crew_new` module is an AI-powered system for automatically generating comprehensive research review papers on any topic. It leverages CrewAI to orchestrate multiple specialized agents working together.
+
+#### Key Components:
+
+1. **Agent System**
+   - **Manager Agent**: Oversees the entire paper generation process and coordinates between agents
+   - **Researcher Agent**: Conducts literature searches and analyzes research papers using semantic search
+   - **Writer Agent**: Drafts sections of the review paper based on research findings
+   - **Editor Agent**: Refines and polishes the final paper for clarity and academic standards
+
+2. **Task Workflow**
+   - **Research Tasks**: Initial literature search, background development, theme identification, methodology analysis, findings synthesis
+   - **Writing Tasks**: Section drafting, introduction creation, methodology description, results presentation, discussion development, conclusion formulation
+   - **Editing Tasks**: Content review, citation verification, structural improvement, language refinement
+
+3. **Tools Integration**
+   - **PineconeRetriever**: Semantic search tool that connects to Pinecone vector database
+   - **Citation Manager**: Handles proper academic citation formatting and tracking
+
+4. **Execution Process**
+   - Sequential task execution with memory retention between tasks
+   - Namespace-based session management for result persistence
+   - Structured output in markdown format with proper academic citations
+
 ### Command Line Options
+
+#### Review Paper Generator
+```bash
+python review_paper_writing_crew_new/main.py [OPTIONS]
+  --topic         Research topic to review (default: "Diffusion Large Language Models")
+  --output        Output filename (default: review_paper.md)
+  --namespace     Pinecone namespace (UUID generated if not provided)
+  --index-name    Pinecone index name (default: deepresearchreviewbot)
+  --debug         Enable debug logging for the retriever
+```
 
 #### PDF Processor
 ```bash
