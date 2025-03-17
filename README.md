@@ -11,7 +11,7 @@
 
 An intelligent research assistant that automatically generates comprehensive review papers using multi-agent AI systems.
 
-[Features](#-features) • [Architecture](#-architecture) • [Installation](#-installation) • [Usage](#-usage) • [CrewAI System](#-crewai-multi-agent-system) • [Workflow](#-workflow-process) • [Customization](#-customization)
+[Features](#-features) • [Architecture](#-architecture) • [Installation](#-installation) • [Usage](#-usage) • [CrewAI System](#-crewai-multi-agent-system) • [Workflow](#-workflow-process) • [Customization](#-customization) • [Sample Interactions](#-sample-interactions)
 
 </div>
 
@@ -296,6 +296,16 @@ The system generates well-structured review papers in Markdown format, including
 - Discussion of implications
 - Conclusion and future directions
 - Properly formatted references
+
+## 🔬 Sample Interactions
+
+Explore real-world examples of the Elegant Research Assistant in action by visiting our [Sample Interactions](https://www.linkedin.com/in/umagunda/overlay/experience/2118644624/multiple-media-viewer/?profileId=ACoAADJQQpIBQlVsXCZOANyZoVFiOGlxCZXQJQQ&treasuryMediaId=1635542875242) folder. This collection includes:
+
+- Generated review papers on various topics
+- Examples of different research depths and complexities
+- Demonstrations of the system's capabilities for different academic domains
+
+These samples showcase how the assistant handles diverse research queries and generates comprehensive review papers with proper citations and academic structure.
 
 ## 🔧 Customization
 
