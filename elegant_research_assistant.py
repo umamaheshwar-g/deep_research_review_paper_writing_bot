@@ -721,14 +721,17 @@ async def process_query(query, sidebar_status_container, research_level=40):
         from pdf_processor_pymupdf import process_pdfs
         
         papers_dir = os.path.join(session_dir, "papers")
-        if os.path.exists(papers_dir):
-            processed_papers = process_pdfs(
-                pdf_folder=papers_dir,
-                output_folder=processed_dir,
-                search_results_file=search_results_file,
-                processes=3,
-                remove_stopwords=False
-            )
+        if not os.path.exists(papers_dir):
+            sidebar_status_container.error(f"No papers directory found at: {papers_dir}")
+            return False
+            
+        processed_papers = process_pdfs(
+            pdf_folder=papers_dir,
+            output_folder=processed_dir,
+            search_results_file=search_results_file,
+            processes=3,
+            remove_stopwords=False
+        )
         
         # Update status
         sidebar_status_container.success(f"Processed {len(processed_papers)} papers.")
@@ -749,9 +752,6 @@ async def process_query(query, sidebar_status_container, research_level=40):
             sidebar_status_container.info("Skipping Pinecone indexing (running in limited mode).")
         
         return True
-        else:
-            sidebar_status_container.error(f"No papers directory found at: {papers_dir}")
-            return False
         
     except Exception as e:
         sidebar_status_container.error(f"Error processing query: {str(e)}")
@@ -803,10 +803,10 @@ def generate_review_paper(topic: str, namespace: str, sidebar_status_container) 
             with st.status("🤖 Generating simple review paper...", expanded=True) as status:
                 # Create a container for the output
                 output_container = st.container()
-            
-            # Generate the review paper
-            sidebar_status_container.info("Generating simple review paper...")
-            generate_simple_review(processed_dir, topic, output_path, sidebar_status_container)
+                
+                # Generate the review paper
+                sidebar_status_container.info("Generating simple review paper...")
+                generate_simple_review(processed_dir, topic, output_path, sidebar_status_container)
                 
                 # Update status
                 status.update(label="✅ Review paper generated successfully!", state="complete")
@@ -837,14 +837,14 @@ def generate_review_paper(topic: str, namespace: str, sidebar_status_container) 
             # Create a container for the output
             output_container = st.container()
             
-        # Generate the review paper
-        output_path = generate_review(
-            topic=topic,
-            namespace=namespace,
-            output_dir=os.path.join("downloads", namespace),
+            # Generate the review paper
+            output_path = generate_review(
+                topic=topic,
+                namespace=namespace,
+                output_dir=os.path.join("downloads", namespace),
                 verbose=False,
                 output_container=output_container
-        )
+            )
             
             # Update status
             status.update(label="✅ Review paper generated successfully!", state="complete")
@@ -1014,6 +1014,11 @@ def handle_complete_process(query, sidebar_status_container, research_level=40):
                         sidebar_status_container=sidebar_status_container,
                         research_level=research_level
                     ))
+                    
+                    if result:
+                        st.success("Query processed successfully!")
+                    else:
+                        st.error("Failed to process query.")
                 finally:
                     loop.close()
             else:
@@ -1272,11 +1277,11 @@ def initialize_pinecone():
             index = pc.Index("deepresearchreviewbot")
             st.session_state.pinecone_initialized = True
             print("Pinecone initialized successfully.")
-                else:
+        else:
             # If no API key is available, set the flag to False
             st.session_state.pinecone_initialized = False
             print("Pinecone initialization skipped (no API key).")
-            except Exception as e:
+    except Exception as e:
         # If there's an error, set the flag to False
         st.session_state.pinecone_initialized = False
         print(f"Error initializing Pinecone: {str(e)}")
