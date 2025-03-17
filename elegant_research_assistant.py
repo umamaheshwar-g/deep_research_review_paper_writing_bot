@@ -729,26 +729,26 @@ async def process_query(query, sidebar_status_container, research_level=40):
                 processes=3,
                 remove_stopwords=False
             )
+        
+        # Update status
+        sidebar_status_container.success(f"Processed {len(processed_papers)} papers.")
+        
+        # If Pinecone is initialized, proceed with indexing
+        if st.session_state.pinecone_initialized:
+            # Index documents in Pinecone
+            sidebar_status_container.info("Indexing documents in Pinecone...")
+            indexing_success = index_documents_in_pinecone(processed_dir, chat_id, sidebar_status_container)
             
-            # Update status
-            sidebar_status_container.success(f"Processed {len(processed_papers)} papers.")
-            
-            # If Pinecone is initialized, proceed with indexing
-            if st.session_state.pinecone_initialized:
-                # Index documents in Pinecone
-                sidebar_status_container.info("Indexing documents in Pinecone...")
-                indexing_success = index_documents_in_pinecone(processed_dir, chat_id, sidebar_status_container)
-                
-                if indexing_success:
-                    st.session_state.pinecone_indexed = True
-                    sidebar_status_container.success("Documents indexed in Pinecone successfully.")
-                else:
-                    sidebar_status_container.error("Failed to index documents in Pinecone.")
+            if indexing_success:
+                st.session_state.pinecone_indexed = True
+                sidebar_status_container.success("Documents indexed in Pinecone successfully.")
             else:
-                # If Pinecone is not initialized, skip indexing but consider the process successful
-                sidebar_status_container.info("Skipping Pinecone indexing (running in limited mode).")
-            
-            return True
+                sidebar_status_container.error("Failed to index documents in Pinecone.")
+        else:
+            # If Pinecone is not initialized, skip indexing but consider the process successful
+            sidebar_status_container.info("Skipping Pinecone indexing (running in limited mode).")
+        
+        return True
         else:
             sidebar_status_container.error(f"No papers directory found at: {papers_dir}")
             return False
@@ -803,10 +803,10 @@ def generate_review_paper(topic: str, namespace: str, sidebar_status_container) 
             with st.status("🤖 Generating simple review paper...", expanded=True) as status:
                 # Create a container for the output
                 output_container = st.container()
-                
-                # Generate the review paper
-                sidebar_status_container.info("Generating simple review paper...")
-                generate_simple_review(processed_dir, topic, output_path, sidebar_status_container)
+            
+            # Generate the review paper
+            sidebar_status_container.info("Generating simple review paper...")
+            generate_simple_review(processed_dir, topic, output_path, sidebar_status_container)
                 
                 # Update status
                 status.update(label="✅ Review paper generated successfully!", state="complete")
@@ -837,14 +837,14 @@ def generate_review_paper(topic: str, namespace: str, sidebar_status_container) 
             # Create a container for the output
             output_container = st.container()
             
-            # Generate the review paper
-            output_path = generate_review(
-                topic=topic,
-                namespace=namespace,
-                output_dir=os.path.join("downloads", namespace),
+        # Generate the review paper
+        output_path = generate_review(
+            topic=topic,
+            namespace=namespace,
+            output_dir=os.path.join("downloads", namespace),
                 verbose=False,
                 output_container=output_container
-            )
+        )
             
             # Update status
             status.update(label="✅ Review paper generated successfully!", state="complete")
@@ -1272,11 +1272,11 @@ def initialize_pinecone():
             index = pc.Index("deepresearchreviewbot")
             st.session_state.pinecone_initialized = True
             print("Pinecone initialized successfully.")
-        else:
+                else:
             # If no API key is available, set the flag to False
             st.session_state.pinecone_initialized = False
             print("Pinecone initialization skipped (no API key).")
-    except Exception as e:
+            except Exception as e:
         # If there's an error, set the flag to False
         st.session_state.pinecone_initialized = False
         print(f"Error initializing Pinecone: {str(e)}")
@@ -1427,7 +1427,7 @@ def display_review_paper():
         
         # Use st.markdown to properly render the markdown content
         st.markdown(paper_content)
-            
+        
     except Exception as e:
         st.error(f"Error displaying review paper: {str(e)}")
         traceback.print_exc()

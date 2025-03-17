@@ -1,20 +1,32 @@
-# 📚 Research Paper Finder
+# 🧠 Elegant Research Assistant
 
 <div align="center">
 
-![Python Version](https://img.shields.io/badge/python-3.7%2B-blue)
-![License](https://img.shields.io/badge/license-MIT-green)
-![Streamlit](https://img.shields.io/badge/streamlit-1.24%2B-red)
-![OpenAI](https://img.shields.io/badge/OpenAI-API-orange)
-![Pinecone](https://img.shields.io/badge/Pinecone-Vector%20DB-lightgrey)
+![Python Version](https://img.shields.io/badge/python-3.9%2B-blue?style=for-the-badge)
+![License](https://img.shields.io/badge/license-MIT-green?style=for-the-badge)
+![Streamlit](https://img.shields.io/badge/streamlit-1.24%2B-red?style=for-the-badge)
+![CrewAI](https://img.shields.io/badge/CrewAI-Powered-blue?style=for-the-badge)
+![OpenAI](https://img.shields.io/badge/OpenAI-GPT_4-green?style=for-the-badge)
+![Pinecone](https://img.shields.io/badge/Pinecone-Vector_DB-teal?style=for-the-badge)
 
-A powerful Streamlit-based application for discovering, downloading, and analyzing research papers using advanced semantic search capabilities.
+An intelligent research assistant that automatically generates comprehensive review papers using multi-agent AI systems.
 
-[Features](#features) • [Prerequisites](#prerequisites) • [Usage](#usage) • [Documentation](#documentation) • [Installation](#installation) • [Contributing](#contributing)
+[Features](#-features) • [Architecture](#-architecture) • [Installation](#-installation) • [Usage](#-usage) • [CrewAI System](#-crewai-multi-agent-system) • [Workflow](#-workflow-process) • [Customization](#-customization)
 
 </div>
 
 ---
+
+## 📋 Overview
+
+The Elegant Research Assistant is an advanced AI-powered system that automates the entire process of academic research and review paper generation. Built around the `elegant_research_assistant.py` Streamlit application, it combines:
+
+- 🔍 **Intelligent paper search and retrieval**
+- 📊 **Automated PDF processing and analysis**
+- 🧮 **Vector embedding and semantic indexing**
+- 🤖 **Multi-agent AI collaboration with CrewAI**
+- 📝 **Structured review paper generation**
+- 🌐 **Interactive Streamlit web interface**
 
 ## ✨ Features
 
@@ -27,143 +39,197 @@ A powerful Streamlit-based application for discovering, downloading, and analyzi
 - 🎯 **Smart Metadata**: Enhanced metadata extraction and processing
 - 🖥️ **Modern UI**: Clean and intuitive Streamlit interface
 - 📝 **Automated Review Papers**: AI-generated comprehensive research reviews using multi-agent collaboration
+- 💡 **Query Suggestions**: AI-powered suggestions to improve your research queries
+- 🔄 **Follow-up Questions**: Refine generated reviews with specific follow-up questions
+- 🔌 **Limited Mode Operation**: Function without Pinecone for basic review generation
 
-## 🚀 Prerequisites
+## 🏗️ Architecture
 
-- Python 3.7 or higher
-- Pinecone API key ([Get here](https://www.pinecone.io/))
-- OpenAI API key ([Get here](https://platform.openai.com/))
+```
+┌─────────────────────────────────────────────────────────────────┐
+│                  Elegant Research Assistant                      │
+└───────────────────────────────┬─────────────────────────────────┘
+                                │
+┌───────────────────────────────▼─────────────────────────────────┐
+│                     Streamlit Web Interface                      │
+└───────────────────────────────┬─────────────────────────────────┘
+                                │
+┌───────────────────────────────▼─────────────────────────────────┐
+│                      Research Pipeline                           │
+├─────────────────────┬─────────────────────┬─────────────────────┤
+│  Paper Search &     │  PDF Processing     │  Vector Embedding   │
+│  Download           │  & Analysis         │  & Indexing         │
+└─────────────────────┴─────────────────────┴─────────────────────┘
+                                │
+┌───────────────────────────────▼─────────────────────────────────┐
+│                    CrewAI Agent System                           │
+├─────────────┬─────────────┬─────────────────┬───────────────────┤
+│  Manager    │ Researcher  │    Writer       │     Editor        │
+│  Agent      │   Agent     │    Agent        │     Agent         │
+└─────────────┴─────────────┴─────────────────┴───────────────────┘
+                                │
+┌───────────────────────────────▼─────────────────────────────────┐
+│                     Generated Review Paper                       │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+### Data Flow
+
+<div align="center">
+<pre>
+┌─────────────┐     ┌─────────────┐     ┌─────────────┐     ┌─────────────┐     ┌─────────────┐
+│    Query    │     │    PDFs     │     │   Chunks    │     │   Vectors   │     │   Review    │
+│   Engine    │────▶│  Processor  │────▶│  Generator  │────▶│   Search    │────▶│    Paper    │
+│             │     │             │     │             │     │             │     │  Generator  │
+└─────────────┘     └─────────────┘     └─────────────┘     └─────────────┘     └─────────────┘
+      │                   ▲                   │                   │                   │
+      │                   │                   │                   │                   │
+      ▼                   │                   ▼                   ▼                   ▼
+┌─────────────┐     ┌─────────────┐     ┌─────────────┐     ┌─────────────┐     ┌─────────────┐
+│  Academic   │     │   Paper     │     │  OpenAI     │     │  Pinecone   │     │   CrewAI    │
+│  Sources    │     │ Repository  │     │ Embeddings  │     │   Vector    │     │  Agents &   │
+│             │     │             │     │             │     │    DB       │     │   Tasks     │
+└─────────────┘     └─────────────┘     └─────────────┘     └─────────────┘     └─────────────┘
+</pre>
+</div>
+
+## 🚀 Installation
+
+### Prerequisites
+- Python 3.9+
+- OpenAI API key
+- Pinecone API key
+
+### Setup
+
+1. **Clone the repository**
+```bash
+git clone https://github.com/yourusername/elegant-research-assistant.git
+cd elegant-research-assistant
+```
+
+2. **Set up virtual environment**
+```bash
+# Windows
+python -m venv venv
+.\venv\Scripts\Activate.ps1
+
+# Unix/MacOS
+python -m venv venv
+source venv/bin/activate
+```
+
+3. **Install dependencies**
+```bash
+pip install -r requirements.txt
+```
+
+4. **Configure environment variables**
+Create a `.env` file in the project root:
+```env
+# Required API Keys
+OPENAI_API_KEY=your_openai_api_key_here
+PINECONE_API_KEY=your_pinecone_api_key_here
+
+# Optional API Keys
+GEMINI_API_KEY=your_gemini_api_key  # For query suggestions
+
+# Pinecone Configuration
+PINECONE_INDEX_NAME=deepresearchreviewbot  # Default index name
+```
 
 ## 📖 Usage
 
-### Web Interface
+### Streamlit Web Interface
 
-1. **Start the application**
+The main entry point for the application is `elegant_research_assistant.py`, which provides a user-friendly Streamlit interface for all functionality.
+
 ```bash
-streamlit run final_script.py
-```
-
-2. **Use the interface**
-- Enter your research query
-- Adjust search parameters in the sidebar
-- Click "Search and Download"
-- Save the generated UUID for future reference
-
-### Command Line Interface
-
-Process papers from existing sessions:
-```bash
-python final_script.py --uuid YOUR_SESSION_UUID --process
-```
-
-### Review Paper Generation
-
-Generate comprehensive research review papers:
-```bash
-# Activate the virtual environment
+# Activate the virtual environment (if not already activated)
 # Windows
 .\venv\Scripts\Activate.ps1
 
-# Generate a review paper on a specific topic
-python review_paper_writing_crew_new/main.py --topic "Your Research Topic" --output review_paper.md
-
-# Use an existing Pinecone namespace
-python review_paper_writing_crew_new/main.py --topic "Your Research Topic" --namespace YOUR_NAMESPACE --output review_paper.md
+# Launch the application
+streamlit run elegant_research_assistant.py
 ```
 
-## 🔧 Troubleshooting
+### Using the Interface
 
-### Environment Variable Issues
+1. **Enter a research query** in the main input field
+2. **Choose an action**:
+   - **Write Research Review**: Process the query and generate a complete review paper
+   - **Process Query Only**: Download and process papers without generating a review
+3. **Track progress** in the sidebar status section
+4. **View and download** the generated review paper
+5. **Ask follow-up questions** to refine the review
 
-If you encounter issues related to environment variables, try these solutions:
+### Real-time Progress Tracking
 
-1. **API Key Not Found**
-   ```
-   Error: OPENAI_API_KEY/PINECONE_API_KEY not found
-   ```
-   - Ensure your `.env` file is in the correct location (project root)
-   - Check that the variable names match exactly (case-sensitive)
-   - Verify there are no spaces around the equals sign: `KEY=value` (not `KEY = value`)
-   - Try printing the environment variables to debug:
-     ```python
-     import os
-     from dotenv import load_dotenv
-     load_dotenv()
-     print(f"OPENAI_API_KEY set: {bool(os.getenv('OPENAI_API_KEY'))}")
-     print(f"PINECONE_API_KEY set: {bool(os.getenv('PINECONE_API_KEY'))}")
-     ```
+The application provides real-time progress updates through:
+- Status indicators in the sidebar
+- Progress bars for each processing stage
+- Live output from the CrewAI agents during review generation
 
-2. **Module Can't Find Environment Variables**
-   - Create a module-specific `.env` file in the module directory
-   - Or use absolute paths in your code:
-     ```python
-     from dotenv import load_dotenv
-     import os
-     
-     # Load from project root
-     load_dotenv(os.path.join(os.path.dirname(os.path.dirname(__file__)), '.env'))
-     ```
+### Session Management
 
-3. **Invalid API Keys**
-   - Verify your API keys are valid and active
-   - Check for any whitespace or special characters that might have been copied
-   - Ensure you're using the correct API key format for each service
+- Each research session is assigned a unique UUID
+- You can retrieve previous sessions by entering the UUID in the sidebar
+- Session data is stored in the `downloads/{UUID}` directory
+- The sidebar "Quick Actions" section allows generating review papers from existing sessions
 
-## 📁 Project Structure
+## 🤖 CrewAI Multi-Agent System
+
+The heart of the review paper generation process is a specialized CrewAI multi-agent system integrated directly into the Streamlit application. The system works collaboratively through:
+
+### 👨‍💼 Manager Agent
+- Oversees the entire review paper generation process
+- Coordinates between other agents
+- Ensures coherent integration of all components
+- Maintains focus on the research topic
+
+### 🔍 Researcher Agent
+- Utilizes semantic search to find relevant research chunks
+- Filters results by relevance scores
+- Works with document chunks and their positions
+- Manages citations and analyzes content across multiple documents
+- Uses the PineconeRetriever tool to access the vector database
+
+### ✍️ Writer Agent
+- Drafts comprehensive, well-structured review papers
+- Synthesizes information from multiple document sections
+- Properly attributes sources using citation information
+- Creates coherent narratives from research content
+- Follows academic writing conventions and standards
+
+### 📝 Editor Agent
+- Reviews and refines the draft review paper
+- Ensures logical flow and coherence
+- Checks citation formatting and consistency
+- Improves clarity and readability
+- Ensures academic standards are maintained
+
+### Agent Interaction Visualization
 
 ```
-research-paper-finder/
-├── 📜 final_script.py          # Main application script
-├── 📂 research_paper_downloader/ # Paper downloading module
-├── 📄 pdf_processor_pymupdf.py  # PDF processing module
-├── 📋 requirements.txt         # Project dependencies
-├── 🔑 .env                    # Environment variables (not in git)
-├── 🔑 .env.toml               # Alternative TOML-format environment config (optional)
-├── 📂 review_paper_writing_crew_new/ # AI-powered research paper writing module
-│   ├── 📜 main.py             # Main entry point for the review paper generation
-│   ├── 🔑 .env                # Module-specific environment variables (optional)
-│   ├── 🔑 .env.example        # Example environment file for the module
-│   ├── 📂 agents/             # CrewAI agent definitions
-│   │   ├── 📄 manager_agent.py # Oversees the entire paper generation process
-│   │   ├── 📄 researcher_agent.py # Retrieves and analyzes research papers
-│   │   ├── 📄 writer_agent.py  # Drafts sections of the review paper
-│   │   └── 📄 editor_agent.py  # Refines and polishes the final paper
-│   ├── 📂 tasks/              # Task definitions for each agent
-│   │   ├── 📄 research_tasks.py # Tasks for literature search and analysis
-│   │   ├── 📄 writing_tasks.py # Tasks for drafting paper sections
-│   │   └── 📄 editing_tasks.py # Tasks for editing and refinement
-│   ├── 📂 tools/              # Custom tools for agents
-│   │   ├── 📄 retriever.py    # Pinecone vector search tool
-│   │   └── 📄 citation_manager.py # Manages paper citations
-│   └── 📂 utils/              # Utility functions
-│       └── 📄 helpers.py      # Helper functions for the module
-└── 📁 downloads/              # Downloaded papers and processed data
-    └── {session-uuid}/
-        ├── 📚 papers/         # Downloaded PDF files
-        └── 🔍 processed_data/ # Processed paper data
+Manager Agent
+    │
+    ├── Assigns tasks to ──► Researcher Agent ──► PineconeRetriever Tool
+    │                             │
+    │                             ▼
+    │                       Research Findings
+    │                             │
+    ├── Coordinates with ───► Writer Agent
+    │                             │
+    │                             ▼
+    │                        Draft Paper
+    │                             │
+    └── Reviews with ────────► Editor Agent
+                                  │
+                                  ▼
+                           Final Review Paper
 ```
 
-### 🔑 Environment File Management
-
-The project uses environment variables for configuration and API keys. There are several environment files:
-
-1. **Root `.env`**: Main configuration file in the project root
-   - Contains all API keys and configuration settings
-   - Used by all components unless overridden
-
-2. **Module-specific `.env` files**:
-   - `research_paper_downloader/.env`: Settings for the paper downloader
-   - `review_paper_writing_crew_new/.env`: Settings for the review paper generator
-
-3. **Alternative formats**:
-   - `.env.toml`: TOML-format configuration (more structured)
-   - `.env.example`: Example configuration templates
-
-For most users, creating a single `.env` file in the project root with all required variables is sufficient.
-
-## 📚 Documentation
-
-### 🔄 Workflow Steps
+## 🔄 Workflow Process
 
 <div align="center">
   <table>
@@ -191,326 +257,128 @@ For most users, creating a single `.env` file in the project root with all requi
   </table>
 </div>
 
-<div align="center">
-<pre>
-┌─────────────┐     ┌─────────────┐     ┌─────────────┐     ┌─────────────┐     ┌─────────────┐
-│    Query    │     │    PDFs     │     │   Chunks    │     │   Vectors   │     │   Review    │
-│   Engine    │────▶│  Processor  │────▶│  Generator  │────▶│   Search    │────▶│    Paper    │
-│             │     │             │     │             │     │             │     │  Generator  │
-└─────────────┘     └─────────────┘     └─────────────┘     └─────────────┘     └─────────────┘
-      │                   ▲                   │                   │                   │
-      │                   │                   │                   │                   │
-      ▼                   │                   ▼                   ▼                   ▼
-┌─────────────┐     ┌─────────────┐     ┌─────────────┐     ┌─────────────┐     ┌─────────────┐
-│  Academic   │     │   Paper     │     │  OpenAI     │     │  Pinecone   │     │   CrewAI    │
-│  Sources    │     │ Repository  │     │ Embeddings  │     │   Vector    │     │  Agents &   │
-│             │     │             │     │             │     │    DB       │     │   Tasks     │
-└─────────────┘     └─────────────┘     └─────────────┘     └─────────────┘     └─────────────┘
-</pre>
-</div>
+1. **Query Processing**: User enters a research topic
+2. **Paper Retrieval**: System searches and downloads relevant academic papers
+3. **PDF Processing**: Papers are processed, text extracted, and metadata captured
+4. **Vector Indexing**: Document chunks are embedded and indexed in Pinecone
+5. **CrewAI Activation**: Multi-agent system is initialized with the research topic
+6. **Research Phase**: Researcher agent retrieves and analyzes relevant content
+7. **Writing Phase**: Writer agent drafts a comprehensive review paper
+8. **Editing Phase**: Editor agent refines and improves the draft
+9. **Final Output**: Completed review paper is presented to the user
 
-#### 📥 1. Paper Discovery & Download
+## 🛠️ Tools and Technologies
 
-<table>
-<tr>
-<td width="80"><h1 align="center">🔍</h1></td>
-<td>
+### Vector Database
+- **Pinecone**: Stores and retrieves document embeddings for semantic search
 
-- **Multi-Source Search**: Queries academic databases and repositories to find relevant papers
-- **Smart Filtering**: Uses AI-powered relevance scoring to prioritize the most important papers
-- **Concurrent Downloads**: Implements asynchronous downloading with progress tracking
-- **Metadata Extraction**: Automatically extracts titles, authors, publication dates, and abstracts
-- **Format Handling**: Supports PDF documents with automatic format validation
+### Retrieval Tools
+- **PineconeRetriever**: Custom CrewAI tool for semantic search in the vector database
+- **Citation Manager**: Manages and formats academic citations
 
-</td>
-</tr>
-</table>
+### Language Models
+- **GPT-4o**: Powers the Writer Agent for high-quality content generation
+- **GPT-4o-mini**: Powers the Researcher Agent for efficient information retrieval
+- **Embedding Models**: OpenAI's text-embedding-3-large for document vectorization
 
-#### 📊 2. PDF Processing
+### Frontend
+- **Streamlit**: Interactive web interface with real-time progress updates
+- **Custom StreamToExpander**: Real-time output display in the Streamlit interface
 
-<table>
-<tr>
-<td width="80"><h1 align="center">📄</h1></td>
-<td>
+## 📄 Example Output
 
-- **Text Extraction**: Uses PyMuPDF to extract full text content with layout preservation
-- **Structure Recognition**: Identifies sections, headings, figures, and tables
-- **Metadata Enhancement**: Enriches document metadata with extracted information
-- **Content Analysis**: Performs initial content analysis for quality assessment
-- **Multi-Processing**: Utilizes parallel processing for handling multiple documents efficiently
+The system generates well-structured review papers in Markdown format, including:
 
-</td>
-</tr>
-</table>
+- Title and introduction
+- Background and theoretical foundations
+- Methodology overview
+- Key findings and analysis
+- Discussion of implications
+- Conclusion and future directions
+- Properly formatted references
 
-#### 🧩 3. Vector Indexing
+## 🔧 Customization
 
-<table>
-<tr>
-<td width="80"><h1 align="center">🔢</h1></td>
-<td>
+You can customize the review paper generation by modifying:
+- The agent prompts in `review_paper_writing_crew_new/agents/`
+- The task definitions in `review_paper_writing_crew_new/tasks/`
+- The retrieval parameters in `review_paper_writing_crew_new/tools/retriever.py`
 
-- **Smart Chunking**: Splits documents into semantic chunks using RecursiveCharacterTextSplitter
-- **Embedding Generation**: Creates vector embeddings using OpenAI's text-embedding-3-large model
-- **Metadata Preservation**: Maintains document metadata linked to each chunk
-- **Batch Processing**: Processes embeddings in optimized batches for efficiency
-- **Pinecone Integration**: Stores vectors in Pinecone with namespace-based organization
+## 📚 Project Structure
 
-</td>
-</tr>
-</table>
-
-#### 🔎 4. Semantic Search
-
-<table>
-<tr>
-<td width="80"><h1 align="center">🧠</h1></td>
-<td>
-
-- **Query Vectorization**: Converts natural language queries into vector representations
-- **Similarity Matching**: Performs cosine similarity search across the vector database
-- **Context-Aware Results**: Returns results with surrounding context for better understanding
-- **Relevance Scoring**: Ranks results based on semantic similarity scores
-- **Filtering Capabilities**: Supports filtering by document, section, or custom metadata
-
-</td>
-</tr>
-</table>
-
-#### 📝 5. AI-Powered Review Paper Generation
-
-<table>
-<tr>
-<td width="80"><h1 align="center">🤖</h1></td>
-<td>
-
-- **Multi-Agent Collaboration**: Orchestrates specialized agents using CrewAI framework
-- **Research Workflow**: Implements a structured research process with defined tasks
-- **Content Synthesis**: Combines information from multiple sources into coherent sections
-- **Citation Management**: Automatically tracks and formats academic citations
-- **Quality Control**: Includes editing and refinement phases for academic standards
-
-</td>
-</tr>
-</table>
-
-### Review Paper Writing Crew Architecture
-
-The `review_paper_writing_crew_new` module is an AI-powered system for automatically generating comprehensive research review papers on any topic. It leverages CrewAI to orchestrate multiple specialized agents working together.
-
-#### Key Components:
-
-1. **Agent System**
-   - **Manager Agent**: Oversees the entire paper generation process and coordinates between agents
-   - **Researcher Agent**: Conducts literature searches and analyzes research papers using semantic search
-   - **Writer Agent**: Drafts sections of the review paper based on research findings
-   - **Editor Agent**: Refines and polishes the final paper for clarity and academic standards
-
-2. **Task Workflow**
-   - **Research Tasks**: Initial literature search, background development, theme identification, methodology analysis, findings synthesis
-   - **Writing Tasks**: Section drafting, introduction creation, methodology description, results presentation, discussion development, conclusion formulation
-   - **Editing Tasks**: Content review, citation verification, structural improvement, language refinement
-
-3. **Tools Integration**
-   - **PineconeRetriever**: Semantic search tool that connects to Pinecone vector database
-   - **Citation Manager**: Handles proper academic citation formatting and tracking
-
-4. **Execution Process**
-   - Sequential task execution with memory retention between tasks
-   - Namespace-based session management for result persistence
-   - Structured output in markdown format with proper academic citations
-
-### ⌨️ Command Line Options
-
-<details>
-<summary><b>Review Paper Generator</b></summary>
-
-```bash
-python review_paper_writing_crew_new/main.py [OPTIONS]
-  --topic         Research topic to review (default: "Diffusion Large Language Models")
-  --output        Output filename (default: review_paper.md)
-  --namespace     Pinecone namespace (UUID generated if not provided)
-  --index-name    Pinecone index name (default: deepresearchreviewbot)
-  --debug         Enable debug logging for the retriever
 ```
-</details>
-
-<details>
-<summary><b>PDF Processor</b></summary>
-
-```bash
-python pdf_processor_pymupdf.py [OPTIONS]
-  --folder        PDF files directory
-  --output        Output directory
-  --uuid          Session UUID
-  --processes     Number of processes
-  --remove-stopwords  Remove stopwords (default: True)
-```
-</details>
-
-<details>
-<summary><b>Vector Indexing</b></summary>
-
-```bash
-python pinecone_indexer.py [OPTIONS]
-  --folder        Processed data directory
-  --uuid          Index name
-  --chunk-size    Chunk size (default: 1000)
-  --chunk-overlap Overlap size (default: 200)
-```
-</details>
-
-<details>
-<summary><b>Semantic Search</b></summary>
-
-```bash
-python pinecone_query.py [OPTIONS]
-  --index         Pinecone index name
-  --query         Search query
-  --top-k        Number of results (default: 5)
-```
-</details>
-
-### 📊 Data Flow
-
-The system processes information through a series of transformations:
-
-<table>
-<tr>
-<th>Stage</th>
-<th>Input</th>
-<th>Process</th>
-<th>Output</th>
-</tr>
-<tr>
-<td><b>Query Processing</b></td>
-<td>User research query</td>
-<td>Query expansion and optimization</td>
-<td>Structured search parameters</td>
-</tr>
-<tr>
-<td><b>Paper Discovery</b></td>
-<td>Search parameters</td>
-<td>Multi-source academic search</td>
-<td>PDF documents + metadata</td>
-</tr>
-<tr>
-<td><b>PDF Processing</b></td>
-<td>PDF documents</td>
-<td>Text extraction and structure analysis</td>
-<td>Structured text content</td>
-</tr>
-<tr>
-<td><b>Chunking</b></td>
-<td>Structured text</td>
-<td>Semantic chunking with metadata</td>
-<td>Text chunks with context</td>
-</tr>
-<tr>
-<td><b>Embedding</b></td>
-<td>Text chunks</td>
-<td>Vector embedding generation</td>
-<td>Vector representations</td>
-</tr>
-<tr>
-<td><b>Indexing</b></td>
-<td>Vectors + metadata</td>
-<td>Pinecone vector storage</td>
-<td>Searchable vector database</td>
-</tr>
-<tr>
-<td><b>Semantic Search</b></td>
-<td>Query vectors</td>
-<td>Similarity matching</td>
-<td>Relevant text chunks</td>
-</tr>
-<tr>
-<td><b>Review Generation</b></td>
-<td>Relevant chunks</td>
-<td>Multi-agent collaboration</td>
-<td>Structured review paper</td>
-</tr>
-</table>
-
-## 💻 Installation
-
-1. **Clone the repository**
-```bash
-git clone https://github.com/yourusername/research-paper-finder.git
-cd research-paper-finder
+elegant-research-assistant/
+├── 📜 elegant_research_assistant.py  # Main application entry point with Streamlit UI
+├── 📂 research_paper_downloader/     # Paper downloading module
+├── 📄 pdf_processor_pymupdf.py       # PDF processing module
+├── 📋 requirements.txt               # Project dependencies
+├── 🔑 .env                           # Environment variables (not in git)
+├── 📂 review_paper_writing_crew_new/ # AI-powered research paper writing module
+│   ├── 📜 main.py                    # Entry point for the review paper generation
+│   ├── 📂 agents/                    # CrewAI agent definitions
+│   │   ├── 📄 manager_agent.py       # Oversees the entire paper generation process
+│   │   ├── 📄 researcher_agent.py    # Retrieves and analyzes research papers
+│   │   ├── 📄 writer_agent.py        # Drafts sections of the review paper
+│   │   └── 📄 editor_agent.py        # Refines and polishes the final paper
+│   ├── 📂 tasks/                     # Task definitions for each agent
+│   │   ├── 📄 research_tasks.py      # Tasks for literature search and analysis
+│   │   ├── 📄 writing_tasks.py       # Tasks for drafting paper sections
+│   │   └── 📄 editing_tasks.py       # Tasks for editing and refinement
+│   ├── 📂 tools/                     # Custom tools for agents
+│   │   ├── 📄 retriever.py           # Pinecone vector search tool
+│   │   └── 📄 citation_manager.py    # Manages paper citations
+│   └── 📂 utils/                     # Utility functions
+└── 📁 downloads/                     # Downloaded papers and processed data
+    └── {session-uuid}/
+        ├── 📚 papers/                # Downloaded PDF files
+        ├── 🔍 processed_data/        # Processed paper data
+        └── 📝 *_review.md            # Generated review papers
 ```
 
-2. **Set up virtual environment**
-```bash
-# Windows
-python -m venv venv
-.\venv\Scripts\activate
+## 🔧 Troubleshooting
 
-# Unix/MacOS
-python -m venv venv
-source venv/bin/activate
-```
+### Environment Variable Issues
 
-3. **Install dependencies**
-```bash
-pip install -r requirements.txt
-```
+If you encounter issues related to environment variables, try these solutions:
 
-4. **Configure environment variables**
-Create a `.env` file in the project root:
-```env
-# Required API Keys
-OPENAI_API_KEY=your_openai_api_key_here
-PINECONE_API_KEY=your_pinecone_api_key_here
+1. **API Key Not Found**
+   ```
+   Error: OPENAI_API_KEY/PINECONE_API_KEY not found
+   ```
+   - Ensure your `.env` file is in the correct location (project root)
+   - Check that the variable names match exactly (case-sensitive)
+   - Verify there are no spaces around the equals sign: `KEY=value` (not `KEY = value`)
 
-# Pinecone Configuration
-PINECONE_INDEX_NAME=your_pinecone_index_name  # Default: deepresearchreviewbot
+2. **Module Can't Find Environment Variables**
+   - Create a module-specific `.env` file in the module directory
+   - Or use absolute paths in your code:
+     ```python
+     from dotenv import load_dotenv
+     import os
+     
+     # Load from project root
+     load_dotenv(os.path.join(os.path.dirname(os.path.dirname(__file__)), '.env'))
+     ```
 
-# Academic API Configuration (for paper discovery)
-CROSSREF_EMAIL=your_email@example.com
-PUBMED_EMAIL=your_email@example.com
-SEMANTIC_SCHOLAR_API_KEY=your_semantic_scholar_api_key
-SERPER_API_KEY=your_serper_api_key
-
-# Optional API Keys (for enhanced functionality)
-GROQ_API_KEY=your_groq_api_key  # Alternative LLM provider
-GEMINI_API_KEY=your_gemini_api_key  # Alternative LLM provider
-HF_TOKEN=your_huggingface_token  # For HuggingFace models
-
-# Vector Database Options (Pinecone is required, others optional)
-WEAVIATE_URL=your_weaviate_url  # Optional alternative vector DB
-WEAVIATE_API_KEY=your_weaviate_api_key
-QDRANT_API_KEY=your_qdrant_api_key  # Optional alternative vector DB
-
-# Application Settings
-DEBUG=True  # Set to False in production
-SAVE_RAW_RESPONSES=True  # Set to False to save storage
-```
-
-> **Note**: The project uses multiple `.env` files in different directories. For simplicity, you can create a single `.env` file in the root directory, and it will be used by all components. If you need to customize settings for specific modules, you can create separate `.env` files in the respective directories.
-
-> **Important**: At minimum, you must provide `OPENAI_API_KEY` and `PINECONE_API_KEY` for the application to function properly.
+3. **Invalid API Keys**
+   - Verify your API keys are valid and active
+   - Check for any whitespace or special characters that might have been copied
 
 ## 🤝 Contributing
 
-1. Fork the repository
-2. Create your feature branch
-   ```bash
-   git checkout -b feature/amazing-feature
-   ```
-3. Commit your changes
-   ```bash
-   git commit -m 'Add amazing feature'
-   ```
-4. Push to the branch
-```bash
-   git push origin feature/amazing-feature
-   ```
-5. Open a Pull Request
+Contributions are welcome! Please feel free to submit a Pull Request.
 
-## 📄 License
+## 📜 License
 
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+This project is licensed under the MIT License - see the LICENSE file for details.
+
+## 🙏 Acknowledgements
+
+- [CrewAI](https://github.com/joaomdmoura/crewAI) for the multi-agent framework
+- [Streamlit](https://streamlit.io/) for the web interface
+- [Pinecone](https://www.pinecone.io/) for vector database capabilities
+- [OpenAI](https://openai.com/) for language models
+- [PyMuPDF](https://pymupdf.readthedocs.io/) for PDF processing
 
 ---
 
