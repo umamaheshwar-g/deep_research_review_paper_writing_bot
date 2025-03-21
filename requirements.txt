@@ -1,6 +1,7 @@
 # Core dependencies
 python-dotenv>=1.0.0
 langchain
+langchain_community
 langchain-google-genai
 google-generativeai
 pinecone
