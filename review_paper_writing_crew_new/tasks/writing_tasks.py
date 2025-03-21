@@ -1,3 +1,4 @@
+from calendar import c
 from crewai import Task, Agent
 from typing import List
 
@@ -200,6 +201,7 @@ def create_writing_tasks(writer: Agent) -> List[Task]:
         """,
         agent=writer,
         expected_output="A complete review paper of 3000-6000 words with all sections properly assembled that adheres to academic conventions.",
+        context = []
     )
     
     # Return all writing tasks

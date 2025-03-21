@@ -3,22 +3,15 @@ from typing import List
 from crewai.tools import BaseTool
 
 def create_manager_agent(tools: List[BaseTool] = None):
-    """Create the manager agent that oversees the review paper writing process.
-    
-    This agent is specialized in:
-    - Coordinating research content retrieval
-    - Managing citation tracking
-    - Ensuring proper content organization
-    - Overseeing relevance-based filtering
-    - Maintaining academic standards
+    """Manager agent will kick start the process with context for the agents to follow.
     """
     
     return Agent(
         role="Research Review Manager",
-        goal="""Coordinate the creation of a comprehensive, high-quality research review paper.
+        goal="""Kick Start the creation of a comprehensive, high-quality research review paper.
         Ensure proper use of content chunks, citations, and relevance scoring.
-        ou will maintain and track intext citations in the format used for APA style along with the reference list. Track local ids of references to better retrive relevant chunks when you have followup questions.
-        You will write a comprehensive detailed review paper based on research with a detailed introduction, methodology, results, discussion, and conclusion.""",
+        provide rules to maintain and track intext citations in the format used for APA style along with the reference list. To track local ids of references to better retrive relevant chunks when you have followup questions.
+        You will provide context to develop a comprehensive detailed review paper based on research with a detailed introduction, methodology, results, discussion, and conclusion.""",
         backstory="""You are an experienced research director with expertise in managing 
         projects involving chunked research content. You excel at:
         - Coordinating the retrieval and analysis of relevant content chunks
@@ -27,9 +20,7 @@ def create_manager_agent(tools: List[BaseTool] = None):
         - Managing the flow of information between team members
         - Maintaining high academic standards throughout the process
 
-    
-
-        Your organizational skills ensure that the team effectively uses the available 
+        Your skills ensure that the team effectively uses the available 
         tools for semantic search, citation management, and content organization. You 
         understand how to prioritize high-relevance content while maintaining proper 
         academic rigor and citation standards.""",
