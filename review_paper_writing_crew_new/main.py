@@ -47,7 +47,7 @@ def main():
     retriever = PineconeRetriever(
         namespace=namespace,
         index_name=args.index_name,
-        debug=args.debug
+        debug=True
     )
     
     # Create agents
@@ -57,7 +57,8 @@ def main():
     editor = create_editor_agent()
     
     # Create tasks
-    from tasks.research_tasks import create_research_tasks
+    # from tasks.research_tasks import create_research_tasks
+    from tasks.research_tasks_new import create_research_tasks
     from tasks.writing_tasks import create_writing_tasks
     from tasks.editing_tasks import create_editing_tasks
     

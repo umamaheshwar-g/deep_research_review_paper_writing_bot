@@ -973,7 +973,7 @@ def open_folder(folder_path):
     except Exception as e:
         print(f"Error opening folder: {str(e)}")
 
-def handle_complete_process(query, sidebar_status_container, research_level=40):
+def handle_complete_process(query, sidebar_status_container, research_level=60):
     """
     Handle the complete process of searching, downloading, processing, indexing, and generating a review paper.
     
@@ -1634,7 +1634,7 @@ def main():
         col1, col2 = button_container.columns([1, 1])
         
         # Define research level
-        research_level = 40  # Default research level
+        research_level = 60  # Default research level
         
         # Add the Write Research Review button to the first column
         if col1.button("Write Research Review", key="write_review_button", 
