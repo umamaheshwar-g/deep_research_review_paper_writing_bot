@@ -72,7 +72,7 @@ def main():
     
     # Create the crew
     crew = Crew(
-        agents=[manager, researcher, writer, editor],
+        agents=[ researcher, writer, editor],
         tasks=all_tasks,
         verbose=True,
         process=Process.sequential, # Tasks will be executed in the defined order

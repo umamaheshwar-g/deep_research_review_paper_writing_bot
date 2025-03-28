@@ -1215,27 +1215,6 @@ def get_working_pinecone_api_key():
     # First try from environment variable
     api_key = os.getenv("PINECONE_API_KEY")
     
-    # If that doesn't work, try to read from final_script.py
-    if not api_key or not test_pinecone_api_key(api_key):
-        try:
-            # Look for the API key in final_script.py
-            with open("final_script.py", "r", encoding="utf-8") as f:
-                content = f.read()
-                
-                # Try to find the API key in the file
-                import re
-                api_key_match = re.search(r'pinecone\.Pinecone\(api_key=["\']([^"\']+)["\']', content)
-                if api_key_match:
-                    api_key = api_key_match.group(1)
-                    
-                    # Test if this key works
-                    if test_pinecone_api_key(api_key):
-                        # Save it to environment for future use
-                        os.environ["PINECONE_API_KEY"] = api_key
-                        return api_key
-        except Exception as e:
-            print(f"Error trying to extract API key from final_script.py: {str(e)}")
-    
     # If the environment variable key works, return it
     if api_key and test_pinecone_api_key(api_key):
         return api_key

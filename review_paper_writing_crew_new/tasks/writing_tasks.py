@@ -189,7 +189,7 @@ def create_writing_tasks(writer: Agent) -> List[Task]:
         Compile all sections into a complete research review paper.
         
         Your task is to:
-        0. Based on the research content provided, write a complete review paper that flows logically from beginning to end and adheres to academic conventions that includes Title, Abstract, Introduction, Methods, Main Body(Discussion of Literature),Comparison and Synthesis , Challenges and Limitations, Conclusion and Future Directions , References .
+        0. Based on the research content provided, assemble a complete review paper that flows logically from beginning to end and adheres to academic conventions that includes Title, Abstract, Introduction, Methods, Main Body(Discussion of Literature),Comparison and Synthesis , Challenges and Limitations, Conclusion and Future Directions , References .
         1. Assemble all written sections in the proper order
         2. Ensure consistent formatting throughout the document
         3. Add appropriate transitions between sections

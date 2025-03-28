@@ -31,7 +31,8 @@ def create_manager_agent(tools: List[BaseTool] = None):
             # "model": "gpt-4o-mini",
             "model": "o3-mini",   
             "temperature": 0.2,
-            "max_tokens": 8000
+            "max_tokens": 16000
         },
         tools=tools or [],  # Manager uses the provided tools
+
     ) 

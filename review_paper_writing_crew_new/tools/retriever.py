@@ -243,8 +243,6 @@ class PineconeRetriever(BaseTool):
             
             # Format the text content with truncation if needed
             if text:
-                if len(text) > max_snippet_length:
-                    text = text[:max_snippet_length] + "..."
                 result.append(text)
             else:
                 result.append("No text content available")

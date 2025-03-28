@@ -39,9 +39,9 @@ def create_writer_agent(tools: List[BaseTool] = None):
         allow_delegation=False,
         llm_config={
             # "model": "gpt-4",
-            "model": "gpt-4o",
+            "model": "o3-mini",
             "temperature": 0.4,
-            "max_tokens": 8000
+            "max_tokens": 16000
         },
         tools=tools or [],
     ) 
